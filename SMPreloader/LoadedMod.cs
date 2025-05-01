@@ -28,6 +28,8 @@ namespace SMPreloader
     public List<Type> BepinexEntryTypes = new();
     public List<GameObject> EntryPrefabs = new();
 
+    public bool LoadFinished = false;
+
     public LoadedMod(ModInfo info)
     {
       this.Logger = Logger.GlobalPrefixed($"[{info.DisplayName}]");
@@ -125,6 +127,8 @@ namespace SMPreloader
         }
 
         this.Logger.Log("Done");
+
+        this.LoadFinished = true;
       });
     }
 

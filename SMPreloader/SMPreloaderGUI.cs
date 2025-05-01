@@ -68,23 +68,21 @@ namespace SMPreloader
     {
       ImGui.Text("");
       ImGui.Spacing();
-      DrawConfigTable();
+      DrawLoadTable();
     }
 
     private static void DrawModsLoaded()
     {
       if (ImGui.Button("Start Game"))
         SMConfig.StartGame();
-      DrawConfigTable();
+      DrawLoadTable();
     }
 
     private static void DrawConfigTable()
     {
-      ImGui.PushID("##config");
-
       var mods = SMConfig.Mods;
 
-      if (ImGui.BeginTable("##table", 3, ImGuiTableFlags.SizingFixedFit))
+      if (ImGui.BeginTable("##configtable", 3, ImGuiTableFlags.SizingFixedFit))
       {
         ImGui.TableSetupColumn("##enabled");
         ImGui.TableSetupColumn("##type");
@@ -121,8 +119,49 @@ namespace SMPreloader
         }
         ImGui.EndTable();
       }
+    }
 
-      ImGui.PopID();
+    private static void DrawLoadTable()
+    {
+      var mods = SMConfig.Mods;
+
+      if (ImGui.BeginTable("##loadtable", 3, ImGuiTableFlags.SizingFixedFit))
+      {
+        ImGui.TableSetupColumn("##state", 30f);
+        ImGui.TableSetupColumn("##type");
+        ImGui.TableSetupColumn("##name", ImGuiTableColumnFlags.WidthStretch);
+        for (var i = 0; i < mods.Count; i++)
+        {
+          var mod = mods[i];
+          if (!mod.Enabled)
+            continue;
+
+          ImGui.PushID(i);
+
+          ImGui.TableNextRow();
+          ImGui.TableNextColumn();
+
+          if (mod.Loaded == null)
+            ImGui.Text("");
+          else if (!mod.Loaded.LoadFinished)
+            ImGui.Text("...");
+          else
+            ImGui.TextColored(new Vector4(0, 1, 0, 1), "X");
+
+          ImGui.TableNextColumn();
+          ImGui.Text(mod.Source.ToString());
+
+          ImGui.TableNextColumn();
+          if (ImGui.Selectable(mod.DisplayName, LogFilter == mod.Loaded?.Logger))
+          {
+            LogFilter = mod.Loaded?.Logger ?? Logger.Global;
+            ScrollLogsToEnd = true;
+          }
+
+          ImGui.PopID();
+        }
+        ImGui.EndTable();
+      }
     }
 
     private static Logger LogFilter = Logger.Global;
