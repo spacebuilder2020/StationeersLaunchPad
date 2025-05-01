@@ -20,6 +20,8 @@ namespace SMPreloader
     public List<AssemblyInfo> Assemblies = new();
     public List<string> AssetBundles = new();
 
+    public LoadedMod Loaded;
+
     public string DisplayName
     {
       get

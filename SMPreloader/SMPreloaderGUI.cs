@@ -13,36 +13,69 @@ namespace SMPreloader
 
     public static void Draw()
     {
-      var minSize = new Vector2(400, 400);
+      var screenSize = ImguiHelper.ScreenSize;
       var padding = new Vector2(25, 25);
-      var maxSize = ImguiHelper.ScreenSize - padding * 2;
+      var topLeft = new Vector2(padding.x, screenSize.y * 0.4f);
+      var bottomRight = screenSize - padding;
       PushDefaultStyle();
-      ImGui.SetNextWindowSizeConstraints(minSize, maxSize);
-      ImGui.SetNextWindowPos(padding);
-      ImGui.Begin("##preloader", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar);
+      ImGui.SetNextWindowSize(bottomRight - topLeft);
+      ImGui.SetNextWindowPos(topLeft);
+      ImGui.Begin("##preloader", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize);
 
-      var loading = SMConfig.Loading;
-      if (loading)
-        ImGui.BeginDisabled();
+      ImGui.BeginColumns("##columns", 2, ImGuiOldColumnFlags.NoResize | ImGuiOldColumnFlags.GrowParentContentsSize);
 
-      if (SMConfig.ModsLoaded)
+      ImGui.BeginChild("##left");
+      switch (SMConfig.LoadState)
       {
-        if (ImGui.Button("Start Game") && !loading)
-          SMConfig.StartGame();
+        case LoadState.Initializing:
+          DrawInitializing();
+          break;
+        case LoadState.Configuring:
+          DrawConfiguring();
+          break;
+        case LoadState.ModsLoading:
+          DrawModsLoading();
+          break;
+        case LoadState.ModsLoaded:
+          DrawModsLoaded();
+          break;
       }
-      else
-      {
-        if (ImGui.Button("Load Mods") && !loading)
-          SMConfig.LoadMods();
-      }
+      ImGui.EndChild();
 
-      if (loading)
-        ImGui.EndDisabled();
-
-      DrawConfigTable();
+      ImGui.NextColumn();
+      DrawLogs();
+      ImGui.EndColumns();
 
       ImGui.End();
       PopDefaultStyle();
+    }
+
+    private static void DrawInitializing()
+    {
+      ImGui.Text("");
+      ImGui.Spacing();
+      DrawConfigTable();
+    }
+
+    private static void DrawConfiguring()
+    {
+      if (ImGui.Button("Load Mods"))
+        SMConfig.LoadMods();
+      DrawConfigTable();
+    }
+
+    private static void DrawModsLoading()
+    {
+      ImGui.Text("");
+      ImGui.Spacing();
+      DrawConfigTable();
+    }
+
+    private static void DrawModsLoaded()
+    {
+      if (ImGui.Button("Start Game"))
+        SMConfig.StartGame();
+      DrawConfigTable();
     }
 
     private static void DrawConfigTable()
@@ -51,8 +84,11 @@ namespace SMPreloader
 
       var mods = SMConfig.Mods;
 
-      if (ImGui.BeginTable("##table", 3))
+      if (ImGui.BeginTable("##table", 3, ImGuiTableFlags.SizingFixedFit))
       {
+        ImGui.TableSetupColumn("##enabled");
+        ImGui.TableSetupColumn("##type");
+        ImGui.TableSetupColumn("##name", ImGuiTableColumnFlags.WidthStretch);
         for (var i = 0; i < mods.Count; i++)
         {
           ImGui.TableNextRow();
@@ -72,22 +108,48 @@ namespace SMPreloader
           ImGui.Text(mod.Source.ToString());
 
           ImGui.TableNextColumn();
-          ImGui.Text(mod.DisplayName);
+          if (ImGui.Selectable(mod.DisplayName, LogFilter == mod.Loaded?.Logger))
+          {
+            LogFilter = mod.Loaded?.Logger ?? Logger.Global;
+            ScrollLogsToEnd = true;
+          }
 
           if (!enabled)
-            ImGui.EndDisabled();
+              ImGui.EndDisabled();
 
           ImGui.PopID();
         }
         ImGui.EndTable();
       }
 
-      var logLines = Logger.Global.Lines;
+      ImGui.PopID();
+    }
+
+    private static Logger LogFilter = Logger.Global;
+    private static bool ScrollLogsToEnd = false;
+    private static int LastLogCount = 0;
+    private static void DrawLogs()
+    {
+      ImGui.BeginChild("##logs");
+
+      var logLines = LogFilter.Lines;
+      var totalCount = logLines.TotalCount;
+      if (totalCount != LastLogCount)
+      {
+        LastLogCount = totalCount;
+        ScrollLogsToEnd = true;
+      }
       var lineCount = logLines.Count;
-      for (var i = lineCount - 1; i >= 0; i--)
+      for (var i = 0; i < lineCount; i++)
         ImGui.Text(logLines[i]);
 
-      ImGui.PopID();
+      if (ScrollLogsToEnd)
+      {
+        ScrollLogsToEnd = false;
+        ImGui.SetScrollHereY();
+      }
+
+      ImGui.EndChild();
     }
 
     private static Vector4[] _colors;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,6 +14,35 @@ namespace SMPreloader
 {
   public static class ModLoader
   {
+    public static readonly List<LoadedMod> LoadedMods = new();
+
+    private static object AssembliesLock = new();
+    private static readonly Dictionary<Assembly, LoadedMod> AssemblyToMod = new();
+
+    public static void RegisterAssembly(Assembly assembly, LoadedMod mod)
+    {
+      lock (AssembliesLock)
+      {
+        AssemblyToMod[assembly] = mod;
+      }
+    }
+
+    public static bool TryGetExecutingMod(out LoadedMod mod)
+    {
+      var st = new StackTrace(3);
+      lock (AssembliesLock)
+      {
+        for (var i = 0; i < st.FrameCount; i++)
+        {
+          var frame = st.GetFrame(i);
+          if (AssemblyToMod.TryGetValue(frame.GetMethod().DeclaringType.Assembly, out mod))
+            return true;
+        }
+      }
+      mod = null;
+      return false;
+    }
+
     public static Task<Assembly> LoadAssembly(string path)
     {
       return Task.Run(() => Assembly.LoadFrom(path));
@@ -108,6 +138,8 @@ namespace SMPreloader
         if (modInfo.Source == ModSource.Core) continue;
 
         var mod = new LoadedMod(modInfo);
+        modInfo.Loaded = mod;
+        ModLoader.LoadedMods.Add(mod);
 
         await mod.LoadAssembliesSerial();
         await mod.LoadAssetsSerial();

@@ -1,3 +1,6 @@
+using System;
+using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
 
 namespace SMPreloader
@@ -27,6 +30,16 @@ namespace SMPreloader
         this.Parent.Log(fullMessage, logUnity);
       else if (logUnity)
         Debug.Log(fullMessage);
+    }
+
+    public void LogFormat(string format, params object[] args)
+    {
+      this.Log(string.Format(format, args), true);
+    }
+
+    public void LogFormatSkip(string format, params object[] args)
+    {
+      this.Log(string.Format(format, args), false);
     }
 
     public Logger WithPrefix(string prefix)
@@ -61,6 +74,28 @@ namespace SMPreloader
       }
 
       public string this[int index] => this.lines[(index + this.start) % this.lines.Length];
+    }
+  }
+
+  public class LogWrapper : ILogHandler
+  {
+    public readonly ILogHandler Inner;
+    public LogWrapper(ILogHandler inner)
+    {
+      this.Inner = inner;
+    }
+
+    public void LogException(Exception exception, UnityEngine.Object context)
+    {
+      this.Inner.LogException(exception, context);
+      // TODO
+    }
+
+    public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
+    {
+      this.Inner.LogFormat(logType, context, format, args);
+      if (ModLoader.TryGetExecutingMod(out var mod))
+        mod.Logger.LogFormatSkip(format, args);
     }
   }
 }

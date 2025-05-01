@@ -128,10 +128,12 @@ namespace SMPreloader
       });
     }
 
-    private Task<Assembly> LoadAssembly(AssemblyInfo assemblyInfo)
+    private async Task<Assembly> LoadAssembly(AssemblyInfo assemblyInfo)
     {
       this.Logger.Log($"Loading Assembly {assemblyInfo.Name}");
-      return ModLoader.LoadAssembly(assemblyInfo.Path);
+      var assembly = await ModLoader.LoadAssembly(assemblyInfo.Path);
+      ModLoader.RegisterAssembly(assembly, this);
+      return assembly;
     }
 
     private async Task LoadAssetsSingle(string path)

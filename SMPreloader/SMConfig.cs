@@ -16,17 +16,24 @@ using UnityEngine;
 
 namespace SMPreloader
 {
+  public enum LoadState
+  {
+    Initializing,
+    Configuring,
+    ModsLoading,
+    ModsLoaded,
+    GameRunning
+  }
   public static class SMConfig
   {
     public static SplashBehaviour SplashBehaviour;
     public static List<ModInfo> Mods = new();
     public static HashSet<string> GameAssemblies = new();
-    public static bool ModsLoaded = false;
-    public static bool Loading = false;
+    public static LoadState LoadState = LoadState.Initializing;
 
     public static async void Load()
     {
-      Loading = true;
+      LoadState = LoadState.Initializing;
 
       await Task.Run(() =>
       {
@@ -53,7 +60,7 @@ namespace SMPreloader
       Logger.GlobalLog("Loading Details");
       await LoadDetails();
 
-      Loading = false;
+      LoadState = LoadState.Configuring;
     }
 
     private static void LoadConfig()
@@ -188,18 +195,17 @@ namespace SMPreloader
 
     public async static void LoadMods()
     {
-      Loading = true;
+      LoadState = LoadState.ModsLoading;
 
       var strategy = new LinearLoadStrategy();
       await strategy.Load();
 
-      ModsLoaded = true;
-      Loading = false;
+      LoadState = LoadState.ModsLoaded;
     }
 
     public static void StartGame()
     {
-      Loading = true;
+      LoadState = LoadState.GameRunning;
       var co = (IEnumerator)typeof(SplashBehaviour).GetMethod("AwakeCoroutine", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(SplashBehaviour, new object[] { });
       SplashBehaviour.StartCoroutine(co);
       SMPreloaderGUI.IsActive = false;

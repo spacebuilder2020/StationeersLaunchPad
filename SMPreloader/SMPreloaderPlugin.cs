@@ -22,6 +22,9 @@ namespace SMPreloader
       var harmony = new Harmony(pluginGuid);
       harmony.PatchAll();
 
+      var unityLogger = Debug.unityLogger as UnityEngine.Logger;
+      unityLogger.logHandler = new LogWrapper(unityLogger.logHandler);
+
       SMConfig.Load();
     }
   }
