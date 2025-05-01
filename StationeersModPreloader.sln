@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersMods.Interface", "Compatibility/StationeersMods.Interface/StationeersMods.Interface.csproj", "{3adb58e4-4e36-4e7d-bf51-efacae979ec6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersMods.Shared", "Compatibility/StationeersMods.Shared/StationeersMods.Shared.csproj", "{1aa11c13-774b-44e9-aab1-4d963e01e6af}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMPreloader", "SMPreloader/SMPreloader.csproj", "{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3adb58e4-4e36-4e7d-bf51-efacae979ec6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3adb58e4-4e36-4e7d-bf51-efacae979ec6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3adb58e4-4e36-4e7d-bf51-efacae979ec6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3adb58e4-4e36-4e7d-bf51-efacae979ec6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+EndGlobal

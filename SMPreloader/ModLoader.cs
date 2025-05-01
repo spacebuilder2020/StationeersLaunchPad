@@ -1,0 +1,119 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+using BepInEx;
+using StationeersMods.Interface;
+using StationeersMods.Shared;
+using UnityEngine;
+
+namespace SMPreloader
+{
+  public static class ModLoader
+  {
+    public static Task<Assembly> LoadAssembly(string path)
+    {
+      return Task.Run(() => Assembly.LoadFrom(path));
+    }
+
+    public static async Task WaitFor(AsyncOperation op)
+    {
+      while (!op.isDone)
+        await Task.Yield();
+    }
+
+    public static async Task<AssetBundle> LoadAssetBundle(string path)
+    {
+      var request = AssetBundle.LoadFromFileAsync(path);
+      await WaitFor(request);
+      return request.assetBundle;
+    }
+
+    public static async Task<List<GameObject>> LoadAllBundleAssets(AssetBundle bundle)
+    {
+      var request = bundle.LoadAllAssetsAsync<GameObject>();
+      await WaitFor(request);
+      return request.allAssets.Select(obj => (GameObject)obj).ToList();
+    }
+
+    public static async Task<ExportSettings> LoadBundleExportSettings(AssetBundle bundle)
+    {
+      var request = bundle.LoadAssetAsync<ExportSettings>("ExportSettings");
+      await WaitFor(request);
+      return (ExportSettings)request.asset;
+    }
+
+    public static List<Type> FindExplicitStationeersModsEntrypoints(List<Assembly> assemblies)
+    {
+      var result = new List<Type>();
+      foreach (var assembly in assemblies)
+      {
+        foreach (var type in assembly.GetTypes())
+        {
+          var attr = type.GetCustomAttribute<StationeersMod>();
+          if (attr != null && typeof(ModBehaviour).IsAssignableFrom(type))
+            result.Add(type);
+        }
+      }
+      return result;
+    }
+
+    public static List<Type> FindExportSettingsClassEntrypoints(List<Assembly> assemblies, List<ExportSettings> exports)
+    {
+      var result = new List<Type>();
+      foreach (var exportSettings in exports)
+      {
+        var startupClass = exportSettings._startupClass;
+        if (string.IsNullOrEmpty(startupClass))
+          continue;
+        foreach (var assembly in assemblies)
+        {
+          var type = assembly.GetType(startupClass);
+          if (type != null)
+            result.Add(type);
+        }
+      }
+      return result;
+    }
+
+    public static List<Type> FindBepinexEntrypoints(List<Assembly> assemblies)
+    {
+      var result = new List<Type>();
+      foreach (var assembly in assemblies)
+      {
+        foreach (var type in assembly.GetTypes())
+        {
+          if (typeof(BaseUnityPlugin).IsAssignableFrom(type) && !typeof(ModBehaviour).IsAssignableFrom(type))
+            result.Add(type);
+        }
+      }
+      return result;
+    }
+  }
+
+  public abstract class LoadStrategy
+  {
+    public abstract Task Load();
+  }
+
+  public class LinearLoadStrategy : LoadStrategy
+  {
+    public override async Task Load()
+    {
+      foreach (var modInfo in SMConfig.Mods)
+      {
+        if (!modInfo.Enabled) continue;
+        if (modInfo.Source == ModSource.Core) continue;
+
+        var mod = new LoadedMod(modInfo);
+
+        await mod.LoadAssembliesSerial();
+        await mod.LoadAssetsSerial();
+        await mod.FindEntrypoints();
+        await mod.LoadEntrypoints();
+      }
+    }
+  }
+}

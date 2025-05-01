@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)global.VS.props" />
+  <Import Project="$(SolutionDir)globalRefs.VS.props" />
+  <PropertyGroup>
+    <AssemblyName>SMPreloader</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="RG.ImGui">
+      <HintPath>$(StationeersDirectory)\rocketstation_Data\Managed\RG.ImGui.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <ProjectReference Include="..\Compatibility\StationeersMods.Interface\StationeersMods.Interface.csproj" />
+    <ProjectReference Include="..\Compatibility\StationeersMods.Shared\StationeersMods.Shared.csproj" />
+  </ItemGroup>
+</Project>

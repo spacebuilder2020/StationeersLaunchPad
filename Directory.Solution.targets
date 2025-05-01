@@ -1,0 +1,18 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)global.VS.props" />
+  <Target Name="CopyToPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <PluginFiles Include="$(OutputPath)/*" />
+      <_PluginFiles_Dest Include="@(PluginFiles)">
+        <Dest>$(PluginPath)\%(Filename)%(Extension)</Dest>
+      </_PluginFiles_Dest>
+      <CopyFiles Include="@(_PluginFiles_Dest)">
+        <PrettySrc>$([System.String]::Copy('%(FullPath)').Replace('$(SolutionDir)', ''))</PrettySrc>
+        <PrettyDest>$([System.String]::Copy('%(Dest)').Replace('$(StationeersDirectory)', ''))</PrettyDest>
+      </CopyFiles>
+    </ItemGroup>
+    <RemoveDir Directories="$(PluginPath)" />
+    <Message Text="%(CopyFiles.PrettySrc) -> %(CopyFiles.PrettyDest)" Importance="high" />
+    <Copy SourceFiles="%(CopyFiles.FullPath)" DestinationFiles="%(CopyFiles.Dest)" />
+  </Target>
+</Project>
