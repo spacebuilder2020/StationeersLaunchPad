@@ -87,14 +87,14 @@ namespace SMPreloader
           newMods.Add(mod);
           modsByPath.Remove(modPath);
         }
-        else
+        else if (modcfg.Enabled)
         {
-          Debug.LogWarning($"mod not found at {modPath}");
+          Logger.GlobalLog($"enabled mod not found at {modPath}");
         }
       }
       foreach (var mod in modsByPath.Values)
       {
-        Debug.LogWarning($"new mod added at {mod.Path}");
+        Logger.GlobalLog($"new mod added at {mod.Path}");
         newMods.Add(mod);
         mod.Enabled = true;
       }
@@ -148,14 +148,16 @@ namespace SMPreloader
       {
         try
         {
-          using (var def = AssemblyDefinition.ReadAssembly(file))
-          {
-            GameAssemblies.Add(def.Name.Name);
-          }
+          using var def = AssemblyDefinition.ReadAssembly(file);
+          GameAssemblies.Add(def.Name.Name);
+        }
+        catch (BadImageFormatException)
+        {
+          // silently ignore
         }
         catch (Exception ex)
         {
-          Debug.LogWarning($"error loading game assembly ${file}: {ex.Message}");
+          Logger.GlobalLog($"error reading game assembly {file}: {ex.Message}");
         }
       }
     }

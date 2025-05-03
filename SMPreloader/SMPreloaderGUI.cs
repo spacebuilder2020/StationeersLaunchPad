@@ -106,11 +106,7 @@ namespace SMPreloader
           ImGui.Text(mod.Source.ToString());
 
           ImGui.TableNextColumn();
-          if (ImGui.Selectable(mod.DisplayName, LogFilter == mod.Loaded?.Logger))
-          {
-            LogFilter = mod.Loaded?.Logger ?? Logger.Global;
-            ScrollLogsToEnd = true;
-          }
+          ImGui.Text(mod.DisplayName);
 
           if (!enabled)
               ImGui.EndDisabled();
