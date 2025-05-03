@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersMods.Interface",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersMods.Shared", "Compatibility/StationeersMods.Shared/StationeersMods.Shared.csproj", "{1aa11c13-774b-44e9-aab1-4d963e01e6af}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RG.ImGui", "Compatibility/RG.ImGui/RG.ImGui.csproj", "{36de1849-6373-4cbd-a9ea-a8a2afb4047a}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMPreloader", "SMPreloader/SMPreloader.csproj", "{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}"
 EndProject
 Global
@@ -20,6 +22,10 @@ Global
 		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1aa11c13-774b-44e9-aab1-4d963e01e6af}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36de1849-6373-4cbd-a9ea-a8a2afb4047a}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36de1849-6373-4cbd-a9ea-a8a2afb4047a}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36de1849-6373-4cbd-a9ea-a8a2afb4047a}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36de1849-6373-4cbd-a9ea-a8a2afb4047a}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

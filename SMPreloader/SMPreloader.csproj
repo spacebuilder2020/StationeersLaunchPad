@@ -3,13 +3,19 @@
   <Import Project="$(SolutionDir)globalRefs.VS.props" />
   <PropertyGroup>
     <AssemblyName>SMPreloader</AssemblyName>
+    <IsServer>False</IsServer>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Compatibility\StationeersMods.Interface\StationeersMods.Interface.csproj" />
+    <ProjectReference Include="..\Compatibility\StationeersMods.Shared\StationeersMods.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsServer)' == 'True'">
+    <ProjectReference Include="..\Compatibility\RG.ImGui\RG.ImGui.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsServer)' != 'True'">
     <Reference Include="RG.ImGui">
       <HintPath>$(StationeersDirectory)\rocketstation_Data\Managed\RG.ImGui.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <ProjectReference Include="..\Compatibility\StationeersMods.Interface\StationeersMods.Interface.csproj" />
-    <ProjectReference Include="..\Compatibility\StationeersMods.Shared\StationeersMods.Shared.csproj" />
   </ItemGroup>
 </Project>

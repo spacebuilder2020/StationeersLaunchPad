@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using Assets.Scripts;
 using ImGuiNET;
 using UI.ImGuiUi;
 using UnityEngine;
@@ -12,6 +13,8 @@ namespace SMPreloader
 
     public static void Draw()
     {
+      if (GameManager.IsBatchMode)
+        return;
       PushDefaultStyle();
 
       if (SMConfig.AutoLoad)
@@ -19,7 +22,6 @@ namespace SMPreloader
       else
         DrawManualLoad();
 
-      ImGui.End();
       PopDefaultStyle();
     }
 
@@ -93,6 +95,7 @@ namespace SMPreloader
       ImGui.NextColumn();
       DrawLogs();
       ImGui.EndColumns();
+      ImGui.End();
     }
 
     private static void DrawInitializing()

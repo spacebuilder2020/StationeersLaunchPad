@@ -35,7 +35,7 @@ namespace SMPreloader
 
     public const double AutoWaitTime = 3;
 
-    public static async UniTaskVoid Run()
+    public static async void Run()
     {
       await Load();
 
@@ -72,8 +72,11 @@ namespace SMPreloader
         Logger.Global.Log("Listing Local Mods");
         await UniTask.Run(() => LoadLocalItems());
 
-        Logger.Global.Log("Listing Workshop Mods");
-        await LoadWorkshopItems();
+        if (!GameManager.IsBatchMode)
+        {
+          Logger.Global.Log("Listing Workshop Mods");
+          await LoadWorkshopItems();
+        }
 
         Logger.Global.Log("Loading Mod Order");
         await UniTask.Run(() => LoadConfig());
@@ -102,7 +105,7 @@ namespace SMPreloader
     {
       if (string.IsNullOrEmpty(Settings.CurrentData.SavePath))
         Settings.CurrentData.SavePath = StationSaveUtils.DefaultPath;
-      if (!SteamClient.IsValid)
+      if (!SteamClient.IsValid && !GameManager.IsBatchMode)
       {
         try
         {

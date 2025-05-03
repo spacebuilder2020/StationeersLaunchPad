@@ -2,8 +2,10 @@
 using System.Reflection;
 using Assets.Scripts;
 using BepInEx;
+using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.LowLevel;
 
 namespace SMPreloader
 {
@@ -25,7 +27,10 @@ namespace SMPreloader
       var unityLogger = Debug.unityLogger as UnityEngine.Logger;
       unityLogger.logHandler = new LogWrapper(unityLogger.logHandler);
 
-      SMConfig.Run().Forget();
+      var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
+      PlayerLoopHelper.Initialize(ref playerLoop);
+
+      SMConfig.Run();
     }
   }
 
