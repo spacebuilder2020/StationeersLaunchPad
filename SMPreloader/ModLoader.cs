@@ -145,10 +145,18 @@ namespace SMPreloader
         modInfo.Loaded = mod;
         ModLoader.LoadedMods.Add(mod);
 
-        await mod.LoadAssembliesSerial();
-        await mod.LoadAssetsSerial();
-        await mod.FindEntrypoints();
-        await mod.LoadEntrypoints();
+        try
+        {
+          await mod.LoadAssembliesSerial();
+          await mod.LoadAssetsSerial();
+          await mod.FindEntrypoints();
+          await mod.LoadEntrypoints();
+        }
+        catch (Exception ex)
+        {
+          mod.Logger.LogException(ex);
+          mod.LoadFailed = true;
+        }
       }
     }
   }

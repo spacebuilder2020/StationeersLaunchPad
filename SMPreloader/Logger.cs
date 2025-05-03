@@ -27,7 +27,7 @@ namespace SMPreloader
       if (this.Parent != null)
         this.Parent.Log(fullMessage, logType, logUnity);
       else if (logUnity)
-        Debug.Log(fullMessage);
+        Debug.LogFormat(logType, LogOption.None, null, fullMessage);
     }
 
     public void Log(string message)

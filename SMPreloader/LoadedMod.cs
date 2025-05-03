@@ -29,6 +29,7 @@ namespace SMPreloader
     public List<GameObject> EntryPrefabs = new();
 
     public bool LoadFinished = false;
+    public bool LoadFailed = false;
 
     public LoadedMod(ModInfo info)
     {

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Text;
 using Assets.Scripts;
 using ImGuiNET;
 using UI.ImGuiUi;
@@ -171,15 +172,21 @@ namespace SMPreloader
 
           if (mod.Loaded == null)
             ImGui.Text("");
+          else if (mod.Loaded.LoadFailed)
+            ImGui.TextColored(new Vector4(1, 0, 0, 1), "X");
           else if (!mod.Loaded.LoadFinished)
             ImGui.Text("...");
           else
-            ImGui.TextColored(new Vector4(0, 1, 0, 1), "X");
+            ImGui.TextColored(new Vector4(0, 1, 0, 1), "+");
 
           ImGui.TableNextColumn();
-          if (ImGui.Selectable("##logselect", LogFilter == mod.Loaded?.Logger, ImGuiSelectableFlags.SpanAllColumns))
+          var selected = LogFilter == mod.Loaded?.Logger;
+          if (ImGui.Selectable("##logselect", selected, ImGuiSelectableFlags.SpanAllColumns))
           {
-            LogFilter = mod.Loaded?.Logger ?? Logger.Global;
+            if (selected)
+              LogFilter = Logger.Global;
+            else
+              LogFilter = mod.Loaded?.Logger ?? Logger.Global;
             ScrollLogsToEnd = true;
           }
           ImGui.SameLine();
@@ -199,7 +206,7 @@ namespace SMPreloader
     private static int LastLogCount = 0;
     private static void DrawLogs()
     {
-      ImGui.BeginChild("##logs");
+      ImGui.BeginChild("##logs", ImGuiWindowFlags.HorizontalScrollbar);
 
       var logLines = LogFilter.Lines;
       var totalCount = logLines.TotalCount;
@@ -224,6 +231,19 @@ namespace SMPreloader
       {
         ScrollLogsToEnd = false;
         ImGui.SetScrollHereY();
+      }
+
+      if (ImGui.IsWindowHovered())
+      {
+        ImGui.SetTooltip("Click to copy logs");
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+          var logText = new StringBuilder();
+          for (var i = 0; i < lineCount; i++)
+            logText.AppendLine(logLines[i].Text);
+          ImGui.SetClipboardText(logText.ToString());
+          LogFilter.Log("Logs copied to clipboard");
+        }
       }
 
       ImGui.EndChild();

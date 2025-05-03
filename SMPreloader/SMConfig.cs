@@ -34,26 +34,36 @@ namespace SMPreloader
 
     public static async void Load()
     {
-      LoadState = LoadState.Initializing;
+      try
+      {
+        LoadState = LoadState.Initializing;
 
-      await Task.Run(() => Initialize());
+        await Task.Run(() => Initialize());
 
-      Logger.Global.Log("Listing Local Mods");
-      await Task.Run(() => LoadLocalItems());
+        Logger.Global.Log("Listing Local Mods");
+        await Task.Run(() => LoadLocalItems());
 
-      Logger.Global.Log("Listing Workshop Mods");
-      await LoadWorkshopItems();
+        Logger.Global.Log("Listing Workshop Mods");
+        await LoadWorkshopItems();
 
-      Logger.Global.Log("Loading Mod Order");
-      await Task.Run(() => LoadConfig());
+        Logger.Global.Log("Loading Mod Order");
+        await Task.Run(() => LoadConfig());
 
-      Logger.Global.Log("Listing Game Assemblies");
-      await Task.Run(() => LoadGameAssemblies());
+        Logger.Global.Log("Listing Game Assemblies");
+        await Task.Run(() => LoadGameAssemblies());
 
-      Logger.Global.Log("Loading Details");
-      await LoadDetails();
+        Logger.Global.Log("Loading Details");
+        await LoadDetails();
 
-      LoadState = LoadState.Configuring;
+        LoadState = LoadState.Configuring;
+      }
+      catch (Exception ex)
+      {
+        Logger.Global.LogError("Error occurred during initialization. Mods will not be loaded");
+        Logger.Global.LogException(ex);
+        Mods = new();
+        LoadState = LoadState.ModsLoaded;
+      }
     }
 
     private static void Initialize()
