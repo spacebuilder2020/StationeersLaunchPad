@@ -61,7 +61,7 @@ namespace SMPreloader
     {
       if (ImGui.Button("Load Mods"))
         SMConfig.LoadMods();
-      DrawConfigTable();
+      DrawConfigTable(edit: true);
     }
 
     private static void DrawModsLoading()
@@ -78,9 +78,18 @@ namespace SMPreloader
       DrawLoadTable();
     }
 
-    private static void DrawConfigTable()
+    private static int DraggingIndex = -1;
+    private static void DrawConfigTable(bool edit = false)
     {
       var mods = SMConfig.Mods;
+      var changed = false;
+      var hoverIndex = -1;
+
+      if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
+        DraggingIndex = -1;
+
+      if (!edit)
+        ImGui.BeginDisabled();
 
       if (ImGui.BeginTable("##configtable", 3, ImGuiTableFlags.SizingFixedFit))
       {
@@ -94,27 +103,50 @@ namespace SMPreloader
           ImGui.PushID(i);
 
           var mod = mods[i];
-          var enabled = mod.Enabled;
 
           ImGui.TableNextColumn();
-          ImGui.Checkbox("##enabled", ref enabled);
-
-          if (!enabled)
-            ImGui.BeginDisabled();
+          if (ImGui.Checkbox("##enabled", ref mod.Enabled))
+            changed = true;
 
           ImGui.TableNextColumn();
-          ImGui.Text(mod.Source.ToString());
+          ImGui.Selectable($"##rowdrag", i == DraggingIndex, ImGuiSelectableFlags.SpanAllColumns);
+          if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem))
+          {
+            hoverIndex = i;
+            if (DraggingIndex == -1 && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+              DraggingIndex = i;
+          }
+          ImGui.SameLine();
+          ImGui.Text($"{mod.Source}");
 
           ImGui.TableNextColumn();
           ImGui.Text(mod.DisplayName);
-
-          if (!enabled)
-              ImGui.EndDisabled();
 
           ImGui.PopID();
         }
         ImGui.EndTable();
       }
+
+      if (!edit)
+        ImGui.EndDisabled();
+
+      if (DraggingIndex != -1 && hoverIndex != -1 && DraggingIndex != hoverIndex)
+      {
+        while (DraggingIndex < hoverIndex)
+        {
+          (mods[DraggingIndex + 1], mods[DraggingIndex]) = (mods[DraggingIndex], mods[DraggingIndex + 1]);
+          DraggingIndex++;
+        }
+        while (DraggingIndex > hoverIndex)
+        {
+          (mods[DraggingIndex - 1], mods[DraggingIndex]) = (mods[DraggingIndex], mods[DraggingIndex - 1]);
+          DraggingIndex--;
+        }
+        changed = true;
+      }
+
+      if (changed)
+        SMConfig.SaveConfig();
     }
 
     private static void DrawLoadTable()
@@ -145,14 +177,16 @@ namespace SMPreloader
             ImGui.TextColored(new Vector4(0, 1, 0, 1), "X");
 
           ImGui.TableNextColumn();
-          ImGui.Text(mod.Source.ToString());
-
-          ImGui.TableNextColumn();
-          if (ImGui.Selectable(mod.DisplayName, LogFilter == mod.Loaded?.Logger))
+          if (ImGui.Selectable("##logselect", LogFilter == mod.Loaded?.Logger, ImGuiSelectableFlags.SpanAllColumns))
           {
             LogFilter = mod.Loaded?.Logger ?? Logger.Global;
             ScrollLogsToEnd = true;
           }
+          ImGui.SameLine();
+          ImGui.Text(mod.Source.ToString());
+
+          ImGui.TableNextColumn();
+          ImGui.Text(mod.DisplayName);
 
           ImGui.PopID();
         }
@@ -200,9 +234,7 @@ namespace SMPreloader
           // premultiply alpha and set to opaque if not fully transparent
           _colors[i] = _colors[i] * _colors[i][3];
           if (_colors[i][3] != 0f)
-          {
             _colors[i][3] = 1f;
-          }
         }
       }
 

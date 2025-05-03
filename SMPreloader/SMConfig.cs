@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
 using Assets.Scripts.Serialization;
+using Assets.Scripts.Util;
 using Mono.Cecil;
 using Steamworks;
 using Steamworks.Ugc;
@@ -35,15 +36,7 @@ namespace SMPreloader
     {
       LoadState = LoadState.Initializing;
 
-      await Task.Run(() =>
-      {
-        if (string.IsNullOrEmpty(Settings.CurrentData.SavePath))
-          Settings.CurrentData.SavePath = StationSaveUtils.DefaultPath;
-        if (!SteamClient.IsValid)
-          SteamClient.Init(544550u);
-        Mods.Add(new ModInfo { Source = ModSource.Core });
-      });
-
+      await Task.Run(() => Initialize());
 
       Logger.GlobalLog("Listing Local Mods");
       await Task.Run(() => LoadLocalItems());
@@ -61,6 +54,24 @@ namespace SMPreloader
       await LoadDetails();
 
       LoadState = LoadState.Configuring;
+    }
+
+    private static void Initialize()
+    {
+      if (string.IsNullOrEmpty(Settings.CurrentData.SavePath))
+        Settings.CurrentData.SavePath = StationSaveUtils.DefaultPath;
+      if (!SteamClient.IsValid)
+      {
+        try
+        {
+          SteamClient.Init(544550u);
+        }
+        catch (Exception ex)
+        {
+          Logger.GlobalLog($"failed to initialize steam: {ex.Message}");
+        }
+      }
+      Mods.Add(new ModInfo { Source = ModSource.Core });
     }
 
     private static void LoadConfig()
@@ -193,6 +204,23 @@ namespace SMPreloader
       {
         mod.AssetBundles.Add(file);
       }
+    }
+
+    public static void SaveConfig()
+    {
+      var config = new ModConfig();
+      foreach (var mod in Mods)
+      {
+        config.Mods.Add(mod.Source switch
+        {
+          ModSource.Core => new CoreModData(),
+          ModSource.Local => new LocalModData(mod.Path, mod.Enabled),
+          ModSource.Workshop => new WorkshopModData(mod.Wrapped, mod.Enabled),
+          _ => throw new Exception($"invalid mod source: {mod.Source}"),
+        });
+      }
+
+      config.SaveXml(WorkshopMenu.ConfigPath);
     }
 
     public async static void LoadMods()
