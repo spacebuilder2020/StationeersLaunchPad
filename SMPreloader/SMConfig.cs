@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,11 +10,9 @@ using System.Threading.Tasks;
 using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
 using Assets.Scripts.Serialization;
-using Assets.Scripts.Util;
 using Mono.Cecil;
 using Steamworks;
 using Steamworks.Ugc;
-using UnityEngine;
 
 namespace SMPreloader
 {
@@ -31,8 +30,38 @@ namespace SMPreloader
     public static List<ModInfo> Mods = new();
     public static HashSet<string> GameAssemblies = new();
     public static LoadState LoadState = LoadState.Initializing;
+    public static bool AutoLoad = true;
+    public static Stopwatch AutoStopwatch = new();
 
-    public static async void Load()
+    public const double AutoWaitTime = 3;
+
+    public static async void Run()
+    {
+      await Load();
+
+      while (LoadState < LoadState.Configuring)
+        await Task.Yield();
+
+      AutoStopwatch.Restart();
+
+      while (LoadState == LoadState.Configuring && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
+        await Task.Yield();
+
+      if (LoadState == LoadState.Configuring)
+        LoadState = LoadState.ModsLoading;
+
+      if (LoadState == LoadState.ModsLoading)
+          await LoadMods();
+
+      AutoStopwatch.Restart();
+
+      while (LoadState == LoadState.ModsLoaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
+        await Task.Yield();
+
+      StartGame();
+    }
+
+    private static async Task Load()
     {
       try
       {
@@ -63,6 +92,7 @@ namespace SMPreloader
         Logger.Global.LogException(ex);
         Mods = new();
         LoadState = LoadState.ModsLoaded;
+        AutoLoad = false;
       }
     }
 
@@ -79,6 +109,8 @@ namespace SMPreloader
         catch (Exception ex)
         {
           Logger.Global.LogError($"failed to initialize steam: {ex.Message}");
+          Logger.Global.LogError("workshop mods will not be loaded");
+          AutoLoad = false;
         }
       }
       Mods.Add(new ModInfo { Source = ModSource.Core });
@@ -233,7 +265,7 @@ namespace SMPreloader
       config.SaveXml(WorkshopMenu.ConfigPath);
     }
 
-    public async static void LoadMods()
+    private async static Task LoadMods()
     {
       LoadState = LoadState.ModsLoading;
 
@@ -243,7 +275,7 @@ namespace SMPreloader
       LoadState = LoadState.ModsLoaded;
     }
 
-    public static void StartGame()
+    private static void StartGame()
     {
       LoadState = LoadState.GameRunning;
       var co = (IEnumerator)typeof(SplashBehaviour).GetMethod("AwakeCoroutine", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(SplashBehaviour, new object[] { });

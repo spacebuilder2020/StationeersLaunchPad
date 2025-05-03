@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -156,6 +155,7 @@ namespace SMPreloader
         {
           mod.Logger.LogException(ex);
           mod.LoadFailed = true;
+          SMConfig.AutoLoad = false;
         }
       }
     }

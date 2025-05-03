@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Reflection;
+using System;
 using System.Text;
-using Assets.Scripts;
 using ImGuiNET;
 using UI.ImGuiUi;
 using UnityEngine;
@@ -14,14 +12,63 @@ namespace SMPreloader
 
     public static void Draw()
     {
+      PushDefaultStyle();
+
+      if (SMConfig.AutoLoad)
+        DrawAutoLoad();
+      else
+        DrawManualLoad();
+
+      ImGui.End();
+      PopDefaultStyle();
+    }
+
+    private static void DrawAutoLoad()
+    {
+      var screenSize = ImguiHelper.ScreenSize;
+      var padding = new Vector2(25, 25);
+      var topLeft = new Vector2(padding.x, screenSize.y - 100f - padding.y);
+      var bottomRight = screenSize - padding;
+
+      ImGui.SetNextWindowSize(bottomRight - topLeft);
+      ImGui.SetNextWindowPos(topLeft);
+      ImGui.Begin("##preloaderauto", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings);
+
+      var autoTime = (int)Math.Ceiling(SMConfig.AutoWaitTime - SMConfig.AutoStopwatch.Elapsed.TotalSeconds);
+
+      ImGui.Text("SMPreloader " + (SMConfig.LoadState switch
+      {
+        LoadState.Initializing => "Initializing",
+        LoadState.Configuring => $"Loading mods in {autoTime}",
+        LoadState.ModsLoading => "Loading mods",
+        LoadState.ModsLoaded => $"Starting game in {autoTime}",
+        _ => "",
+      }));
+
+      var logCount = Logger.Global.Lines.Count;
+      if (logCount > 0)
+        DrawLogLine(Logger.Global.Lines[logCount - 1]);
+      else
+        ImGui.Text("");
+
+      ImGui.TextColored(Vector4.one * 0.5f, "click to configure");
+
+      if (ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        SMConfig.AutoLoad = false;
+
+      ImGui.End();
+    }
+
+    private static void DrawManualLoad()
+    {
       var screenSize = ImguiHelper.ScreenSize;
       var padding = new Vector2(25, 25);
       var topLeft = new Vector2(padding.x, screenSize.y * 0.4f);
       var bottomRight = screenSize - padding;
-      PushDefaultStyle();
+
       ImGui.SetNextWindowSize(bottomRight - topLeft);
       ImGui.SetNextWindowPos(topLeft);
-      ImGui.Begin("##preloader", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize);
+      ImGui.Begin("##preloadermanual", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings);
 
       ImGui.BeginColumns("##columns", 2, ImGuiOldColumnFlags.NoResize | ImGuiOldColumnFlags.GrowParentContentsSize);
 
@@ -46,9 +93,6 @@ namespace SMPreloader
       ImGui.NextColumn();
       DrawLogs();
       ImGui.EndColumns();
-
-      ImGui.End();
-      PopDefaultStyle();
     }
 
     private static void DrawInitializing()
@@ -61,7 +105,7 @@ namespace SMPreloader
     private static void DrawConfiguring()
     {
       if (ImGui.Button("Load Mods"))
-        SMConfig.LoadMods();
+        SMConfig.LoadState = LoadState.ModsLoading;
       DrawConfigTable(edit: true);
     }
 
@@ -75,7 +119,7 @@ namespace SMPreloader
     private static void DrawModsLoaded()
     {
       if (ImGui.Button("Start Game"))
-        SMConfig.StartGame();
+        SMConfig.LoadState = LoadState.GameRunning;
       DrawLoadTable();
     }
 
@@ -217,15 +261,7 @@ namespace SMPreloader
       }
       var lineCount = logLines.Count;
       for (var i = 0; i < lineCount; i++)
-      {
-        var line = logLines[i];
-        if (line.Type == LogType.Log)
-          ImGui.Text(line.Text);
-        else if (line.Type == LogType.Warning)
-          ImGui.TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
-        else
-          ImGui.TextColored(new Vector4(1, 0, 0, 1), line.Text);
-      }
+        DrawLogLine(logLines[i]);
 
       if (ScrollLogsToEnd)
       {
@@ -247,6 +283,16 @@ namespace SMPreloader
       }
 
       ImGui.EndChild();
+    }
+
+    private static void DrawLogLine(LogLine line)
+    {
+      if (line.Type == LogType.Log)
+        ImGui.Text(line.Text);
+      else if (line.Type == LogType.Warning)
+        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
+      else
+        ImGui.TextColored(new Vector4(1, 0, 0, 1), line.Text);
     }
 
     private static Vector4[] _colors;

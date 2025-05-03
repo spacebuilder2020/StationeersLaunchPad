@@ -25,7 +25,7 @@ namespace SMPreloader
       var unityLogger = Debug.unityLogger as UnityEngine.Logger;
       unityLogger.logHandler = new LogWrapper(unityLogger.logHandler);
 
-      SMConfig.Load();
+      SMConfig.Run();
     }
   }
 
