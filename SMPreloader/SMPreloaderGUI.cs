@@ -210,7 +210,15 @@ namespace SMPreloader
       }
       var lineCount = logLines.Count;
       for (var i = 0; i < lineCount; i++)
-        ImGui.Text(logLines[i]);
+      {
+        var line = logLines[i];
+        if (line.Type == LogType.Log)
+          ImGui.Text(line.Text);
+        else if (line.Type == LogType.Warning)
+          ImGui.TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
+        else
+          ImGui.TextColored(new Vector4(1, 0, 0, 1), line.Text);
+      }
 
       if (ScrollLogsToEnd)
       {

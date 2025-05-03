@@ -29,7 +29,11 @@ namespace SMPreloader
 
     public static bool TryGetExecutingMod(out LoadedMod mod)
     {
-      var st = new StackTrace(3);
+      return TryGetStackTraceMod(new StackTrace(3), out mod);
+    }
+
+    public static bool TryGetStackTraceMod(StackTrace st, out LoadedMod mod)
+    {
       lock (AssembliesLock)
       {
         for (var i = 0; i < st.FrameCount; i++)

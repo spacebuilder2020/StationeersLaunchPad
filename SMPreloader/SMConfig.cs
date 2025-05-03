@@ -38,19 +38,19 @@ namespace SMPreloader
 
       await Task.Run(() => Initialize());
 
-      Logger.GlobalLog("Listing Local Mods");
+      Logger.Global.Log("Listing Local Mods");
       await Task.Run(() => LoadLocalItems());
 
-      Logger.GlobalLog("Listing Workshop Mods");
+      Logger.Global.Log("Listing Workshop Mods");
       await LoadWorkshopItems();
 
-      Logger.GlobalLog("Loading Mod Order");
+      Logger.Global.Log("Loading Mod Order");
       await Task.Run(() => LoadConfig());
 
-      Logger.GlobalLog("Listing Game Assemblies");
+      Logger.Global.Log("Listing Game Assemblies");
       await Task.Run(() => LoadGameAssemblies());
 
-      Logger.GlobalLog("Loading Details");
+      Logger.Global.Log("Loading Details");
       await LoadDetails();
 
       LoadState = LoadState.Configuring;
@@ -68,7 +68,7 @@ namespace SMPreloader
         }
         catch (Exception ex)
         {
-          Logger.GlobalLog($"failed to initialize steam: {ex.Message}");
+          Logger.Global.LogError($"failed to initialize steam: {ex.Message}");
         }
       }
       Mods.Add(new ModInfo { Source = ModSource.Core });
@@ -100,12 +100,12 @@ namespace SMPreloader
         }
         else if (modcfg.Enabled)
         {
-          Logger.GlobalLog($"enabled mod not found at {modPath}");
+          Logger.Global.LogWarning($"enabled mod not found at {modPath}");
         }
       }
       foreach (var mod in modsByPath.Values)
       {
-        Logger.GlobalLog($"new mod added at {mod.Path}");
+        Logger.Global.Log($"new mod added at {mod.Path}");
         newMods.Add(mod);
         mod.Enabled = true;
       }
@@ -168,7 +168,7 @@ namespace SMPreloader
         }
         catch (Exception ex)
         {
-          Logger.GlobalLog($"error reading game assembly {file}: {ex.Message}");
+          Logger.Global.LogError($"error reading game assembly {file}: {ex.Message}");
         }
       }
     }

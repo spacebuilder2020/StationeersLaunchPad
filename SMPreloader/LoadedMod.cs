@@ -32,7 +32,7 @@ namespace SMPreloader
 
     public LoadedMod(ModInfo info)
     {
-      this.Logger = Logger.GlobalPrefixed($"[{info.DisplayName}]");
+      this.Logger = Logger.Global.WithPrefix($"[{info.DisplayName}]");
       this.Info = info;
       this.ContentHandler = new(null, new List<IResource>().AsReadOnly(), this.Prefabs.AsReadOnly());
     }

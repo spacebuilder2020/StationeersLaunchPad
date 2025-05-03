@@ -1,7 +1,7 @@
 using System;
-using System.Reflection;
-using HarmonyLib;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace SMPreloader
 {
@@ -9,12 +9,10 @@ namespace SMPreloader
   {
     public const int BUFFER_SIZE = 300;
     public static readonly Logger Global = new();
-    public static void GlobalLog(string message) => Global.Log(message);
-    public static Logger GlobalPrefixed(string prefix) => Global.WithPrefix(prefix);
 
     public readonly string Prefix;
     public readonly Logger Parent;
-    public readonly LineBuffer Lines = new LineBuffer(BUFFER_SIZE);
+    public readonly LineBuffer Lines = new(BUFFER_SIZE);
 
     public Logger(string prefix = "", Logger parent = null)
     {
@@ -22,24 +20,54 @@ namespace SMPreloader
       this.Parent = parent;
     }
 
-    public void Log(string message, bool logUnity = true)
+    public void Log(string message, LogType logType = LogType.Log, bool logUnity = true)
     {
-      this.Lines.AddLine(message);
+      this.Lines.AddLine(message, logType);
       var fullMessage = $"{Prefix}{message}";
       if (this.Parent != null)
-        this.Parent.Log(fullMessage, logUnity);
+        this.Parent.Log(fullMessage, logType, logUnity);
       else if (logUnity)
         Debug.Log(fullMessage);
     }
 
-    public void LogFormat(string format, params object[] args)
+    public void Log(string message)
     {
-      this.Log(string.Format(format, args), true);
+      this.Log(message, LogType.Log, true);
     }
 
-    public void LogFormatSkip(string format, params object[] args)
+    public void LogWarning(string message)
     {
-      this.Log(string.Format(format, args), false);
+      this.Log(message, LogType.Warning, true);
+    }
+
+    public void LogError(string message)
+    {
+      this.Log(message, LogType.Error, true);
+    }
+
+    public void LogException(Exception ex, bool logUnity = true)
+    {
+      this.Lines.AddException(ex, "");
+      var parent = this.Parent;
+      var prefix = this.Prefix;
+      while (parent != null)
+      {
+        parent.Lines.AddException(ex, prefix);
+        prefix = parent.Prefix + prefix;
+        parent = parent.Parent;
+      }
+      if (logUnity)
+        Debug.LogException(ex);
+    }
+
+    public void LogFormat(LogType logType, string format, params object[] args)
+    {
+      this.Log(string.Format(format, args), logType, true);
+    }
+
+    public void LogFormatSkip(LogType logType, string format, params object[] args)
+    {
+      this.Log(string.Format(format, args), logType, false);
     }
 
     public Logger WithPrefix(string prefix)
@@ -49,32 +77,60 @@ namespace SMPreloader
 
     public class LineBuffer
     {
-      private readonly string[] lines;
+      private readonly object _lock = new();
+      private readonly LogLine[] lines;
       public int Count { get; private set; }
       public int TotalCount { get; private set; }
       private int start = 0;
       public LineBuffer(int bufferSize)
       {
-        this.lines = new string[bufferSize];
+        this.lines = new LogLine[bufferSize];
       }
 
-      public void AddLine(string line)
+      public void AddLine(string line, LogType logType)
       {
-        if (this.Count == this.lines.Length)
+        var logLine = new LogLine
         {
-          this.lines[this.start] = line;
-          this.start = (this.start + 1) % this.lines.Length;
-        }
-        else
+          Text = line,
+          Type = logType,
+        };
+        lock (this._lock)
         {
-          this.lines[this.Count] = line;
-          this.Count++;
+          if (this.Count == this.lines.Length)
+          {
+            this.lines[this.start] = logLine;
+            this.start = (this.start + 1) % this.lines.Length;
+          }
+          else
+          {
+            this.lines[this.Count] = logLine;
+            this.Count++;
+          }
+          this.TotalCount++;
         }
-        this.TotalCount++;
       }
 
-      public string this[int index] => this.lines[(index + this.start) % this.lines.Length];
+      public void AddException(Exception ex, string prefix)
+      {
+        var stackTrace = (ex.StackTrace ?? "").Split('\n');
+        lock (this._lock)
+        {
+          this.AddLine($"{prefix}{ex.Message}", LogType.Exception);
+          foreach (var line in stackTrace)
+          {
+            this.AddLine($"{prefix}  {line.Trim()}", LogType.Exception);
+          }
+        }
+      }
+
+      public LogLine this[int index] => this.lines[(index + this.start) % this.lines.Length];
     }
+  }
+
+  public class LogLine
+  {
+    public string Text;
+    public LogType Type;
   }
 
   public class LogWrapper : ILogHandler
@@ -88,14 +144,17 @@ namespace SMPreloader
     public void LogException(Exception exception, UnityEngine.Object context)
     {
       this.Inner.LogException(exception, context);
-      // TODO
+      if (ModLoader.TryGetExecutingMod(out var mod))
+        mod.Logger.LogException(exception, false);
+      else if (ModLoader.TryGetStackTraceMod(new StackTrace(exception), out var mod2))
+        mod2.Logger.LogException(exception, false);
     }
 
     public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
     {
       this.Inner.LogFormat(logType, context, format, args);
       if (ModLoader.TryGetExecutingMod(out var mod))
-        mod.Logger.LogFormatSkip(format, args);
+        mod.Logger.LogFormatSkip(logType, format, args);
     }
   }
 }
