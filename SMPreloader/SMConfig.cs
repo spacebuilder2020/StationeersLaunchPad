@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
 using Assets.Scripts.Serialization;
@@ -35,54 +35,56 @@ namespace SMPreloader
 
     public const double AutoWaitTime = 3;
 
-    public static async void Run()
+    public static async UniTaskVoid Run()
     {
       await Load();
 
       while (LoadState < LoadState.Configuring)
-        await Task.Yield();
+        await UniTask.Yield();
 
       AutoStopwatch.Restart();
 
       while (LoadState == LoadState.Configuring && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
-        await Task.Yield();
+        await UniTask.Yield();
 
       if (LoadState == LoadState.Configuring)
         LoadState = LoadState.ModsLoading;
 
       if (LoadState == LoadState.ModsLoading)
-          await LoadMods();
+        await LoadMods();
 
       AutoStopwatch.Restart();
 
       while (LoadState == LoadState.ModsLoaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
-        await Task.Yield();
+        await UniTask.Yield();
 
       StartGame();
     }
 
-    private static async Task Load()
+    private static async UniTask Load()
     {
       try
       {
         LoadState = LoadState.Initializing;
 
-        await Task.Run(() => Initialize());
+        await UniTask.Run(() => Initialize());
 
         Logger.Global.Log("Listing Local Mods");
-        await Task.Run(() => LoadLocalItems());
+        await UniTask.Run(() => LoadLocalItems());
 
         Logger.Global.Log("Listing Workshop Mods");
         await LoadWorkshopItems();
 
         Logger.Global.Log("Loading Mod Order");
-        await Task.Run(() => LoadConfig());
+        await UniTask.Run(() => LoadConfig());
 
         Logger.Global.Log("Listing Game Assemblies");
-        await Task.Run(() => LoadGameAssemblies());
+        await UniTask.Run(() => LoadGameAssemblies());
 
         Logger.Global.Log("Loading Details");
         await LoadDetails();
+
+        Logger.Global.Log("Mod Config Initialized");
 
         LoadState = LoadState.Configuring;
       }
@@ -173,7 +175,7 @@ namespace SMPreloader
       }
     }
 
-    private static async Task LoadWorkshopItems()
+    private static async UniTask LoadWorkshopItems()
     {
       for (var page = 1; ; page++)
       {
@@ -215,9 +217,9 @@ namespace SMPreloader
       }
     }
 
-    private static async Task LoadDetails()
+    private static async UniTask LoadDetails()
     {
-      await Task.WhenAll(Mods.Select(mod => Task.Run(() => LoadModDetails(mod))));
+      await UniTask.WhenAll(Mods.Select(mod => UniTask.Run(() => LoadModDetails(mod))));
     }
 
     private static void LoadModDetails(ModInfo mod)
@@ -265,13 +267,14 @@ namespace SMPreloader
       config.SaveXml(WorkshopMenu.ConfigPath);
     }
 
-    private async static Task LoadMods()
+    private async static UniTask LoadMods()
     {
       LoadState = LoadState.ModsLoading;
 
       var strategy = new LinearLoadStrategy();
       await strategy.Load();
 
+      Logger.Global.Log("Mods Loaded");
       LoadState = LoadState.ModsLoaded;
     }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using BepInEx;
 using StationeersMods.Interface;
 using StationeersMods.Shared;
@@ -46,32 +46,32 @@ namespace SMPreloader
       return false;
     }
 
-    public static Task<Assembly> LoadAssembly(string path)
+    public static UniTask<Assembly> LoadAssembly(string path)
     {
-      return Task.Run(() => Assembly.LoadFrom(path));
+      return UniTask.RunOnThreadPool(() => Assembly.LoadFrom(path));
     }
 
-    public static async Task WaitFor(AsyncOperation op)
+    public static async UniTask WaitFor(AsyncOperation op)
     {
       while (!op.isDone)
-        await Task.Yield();
+        await UniTask.Yield();
     }
 
-    public static async Task<AssetBundle> LoadAssetBundle(string path)
+    public static async UniTask<AssetBundle> LoadAssetBundle(string path)
     {
       var request = AssetBundle.LoadFromFileAsync(path);
       await WaitFor(request);
       return request.assetBundle;
     }
 
-    public static async Task<List<GameObject>> LoadAllBundleAssets(AssetBundle bundle)
+    public static async UniTask<List<GameObject>> LoadAllBundleAssets(AssetBundle bundle)
     {
       var request = bundle.LoadAllAssetsAsync<GameObject>();
       await WaitFor(request);
       return request.allAssets.Select(obj => (GameObject)obj).ToList();
     }
 
-    public static async Task<ExportSettings> LoadBundleExportSettings(AssetBundle bundle)
+    public static async UniTask<ExportSettings> LoadBundleExportSettings(AssetBundle bundle)
     {
       var request = bundle.LoadAssetAsync<ExportSettings>("ExportSettings");
       await WaitFor(request);
@@ -128,12 +128,12 @@ namespace SMPreloader
 
   public abstract class LoadStrategy
   {
-    public abstract Task Load();
+    public abstract UniTask Load();
   }
 
   public class LinearLoadStrategy : LoadStrategy
   {
-    public override async Task Load()
+    public override async UniTask Load()
     {
       foreach (var modInfo in SMConfig.Mods)
       {

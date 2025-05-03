@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using StationeersMods.Interface;
 using StationeersMods.Shared;
 using UnityEngine;
@@ -38,34 +38,34 @@ namespace SMPreloader
       this.ContentHandler = new(null, new List<IResource>().AsReadOnly(), this.Prefabs.AsReadOnly());
     }
 
-    public async Task LoadAssembliesSerial()
+    public async UniTask LoadAssembliesSerial()
     {
       foreach (var assemblyInfo in this.Info.Assemblies)
         this.Assemblies.Add(await this.LoadAssembly(assemblyInfo));
     }
-    public async Task LoadAssembliesParallel()
+    public async UniTask LoadAssembliesParallel()
     {
-      var assemblies = await Task.WhenAll(
+      var assemblies = await UniTask.WhenAll(
         this.Info.Assemblies.Select(assemblyInfo => this.LoadAssembly(assemblyInfo))
       );
       this.Assemblies.AddRange(assemblies);
     }
 
-    public async Task LoadAssetsSerial()
+    public async UniTask LoadAssetsSerial()
     {
       foreach (var path in this.Info.AssetBundles)
       {
         await this.LoadAssetsSingle(path);
       }
     }
-    public async Task LoadAssetsParallel()
+    public async UniTask LoadAssetsParallel()
     {
-      await Task.WhenAll(this.Info.AssetBundles.Select(path => this.LoadAssetsSingle(path)));
+      await UniTask.WhenAll(this.Info.AssetBundles.Select(path => this.LoadAssetsSingle(path)));
     }
 
-    public Task FindEntrypoints()
+    public UniTask FindEntrypoints()
     {
-      return Task.Run(() =>
+      return UniTask.RunOnThreadPool(() =>
       {
         this.Logger.Log("Finding Entrypoints");
 
@@ -92,9 +92,9 @@ namespace SMPreloader
       });
     }
 
-    public Task LoadEntrypoints()
+    public UniTask LoadEntrypoints()
     {
-      return Task.Run(() =>
+      return UniTask.RunOnThreadPool(() =>
       {
         this.Logger.Log("Loading Entrypoints");
 
@@ -133,7 +133,7 @@ namespace SMPreloader
       });
     }
 
-    private async Task<Assembly> LoadAssembly(AssemblyInfo assemblyInfo)
+    private async UniTask<Assembly> LoadAssembly(AssemblyInfo assemblyInfo)
     {
       this.Logger.Log($"Loading Assembly {assemblyInfo.Name}");
       var assembly = await ModLoader.LoadAssembly(assemblyInfo.Path);
@@ -141,7 +141,7 @@ namespace SMPreloader
       return assembly;
     }
 
-    private async Task LoadAssetsSingle(string path)
+    private async UniTask LoadAssetsSingle(string path)
     {
       var bundle = await this.LoadAssetBundle(path);
       var prefabs = await this.LoadAssetBundleGameObjects(path, bundle);
@@ -151,14 +151,14 @@ namespace SMPreloader
         lock (this._lock) this.Exports.Add(exportSettings);
     }
 
-    private Task<AssetBundle> LoadAssetBundle(string path)
+    private UniTask<AssetBundle> LoadAssetBundle(string path)
     {
       var name = Path.GetFileName(path);
       this.Logger.Log($"Loading AssetBundle {name}");
       return ModLoader.LoadAssetBundle(path);
     }
 
-    private async Task<List<GameObject>> LoadAssetBundleGameObjects(string path, AssetBundle bundle)
+    private async UniTask<List<GameObject>> LoadAssetBundleGameObjects(string path, AssetBundle bundle)
     {
       var name = Path.GetFileName(path);
       this.Logger.Log($"Loading AssetBundle {name} Prefabs");
@@ -168,7 +168,7 @@ namespace SMPreloader
       return assets;
     }
 
-    private Task<ExportSettings> LoadAssetBundleExportSettings(string path, AssetBundle bundle)
+    private UniTask<ExportSettings> LoadAssetBundleExportSettings(string path, AssetBundle bundle)
     {
       var name = Path.GetFileName(path);
       this.Logger.Log($"Loading AssetBundle {name} ExportSettings");
