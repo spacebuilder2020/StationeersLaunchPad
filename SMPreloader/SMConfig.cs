@@ -272,16 +272,16 @@ namespace SMPreloader
 
     public static void SortByDeps()
     {
-      var afterDeps = new Dictionary<int, List<int>>();
+      var beforeDeps = new Dictionary<int, List<int>>();
       var modsById = new Dictionary<ulong, int>();
       void addDep(int from, int to)
       {
         if (from == to)
           return;
-        var list = afterDeps.GetValueOrDefault(from) ?? new();
+        var list = beforeDeps.GetValueOrDefault(from) ?? new();
         if (!list.Contains(to))
           list.Add(to);
-        afterDeps[from] = list;
+        beforeDeps[from] = list;
       }
       for (var i = 0; i < Mods.Count; i++)
       {
@@ -294,9 +294,9 @@ namespace SMPreloader
         }
 
         if (mod.Source == ModSource.Core)
-            modsById[1] = mod.SortIndex;
-          else if (mod.About.WorkshopHandle != 0)
-            modsById[mod.About.WorkshopHandle] = i;
+          modsById[1] = mod.SortIndex;
+        else if (mod.About.WorkshopHandle != 0)
+          modsById[mod.About.WorkshopHandle] = i;
       }
       foreach (var mod in Mods)
       {
@@ -305,7 +305,7 @@ namespace SMPreloader
         bool missingDeps = false;
         foreach (var dep in mod.About.Dependencies ?? new())
           if (modsById.TryGetValue(dep.Id, out var depIndex))
-            addDep(depIndex, mod.SortIndex); // mod after dep
+            addDep(mod.SortIndex, depIndex); // dep after mod
           else
           {
             missingDeps = true;
@@ -334,31 +334,31 @@ namespace SMPreloader
         // LoadAfter is other mods that should be loaded after this one.
         foreach (var before in mod.About.LoadBefore ?? new())
           if (modsById.TryGetValue(before.Id, out var beforeIndex))
-            addDep(beforeIndex, mod.SortIndex); // mod after before
+            addDep(mod.SortIndex, beforeIndex); // before before mod
         foreach (var after in mod.About.LoadAfter ?? new())
           if (modsById.TryGetValue(after.Id, out var afterIndex))
-            addDep(mod.SortIndex, afterIndex); // after after mod
+            addDep(afterIndex, mod.SortIndex); // mod before after
       }
 
-      var checking = new bool[Mods.Count];
+      var visited = new bool[Mods.Count];
       var circularList = new List<int>();
       bool checkCircular(int index)
       {
-        if (checking[index])
+        if (visited[index])
         {
           circularList.Add(index);
           return true;
         }
-        checking[index] = true;
-        foreach (var after in afterDeps.GetValueOrDefault(index) ?? new())
+        visited[index] = true;
+        foreach (var before in beforeDeps.GetValueOrDefault(index) ?? new())
         {
-          if (checkCircular(after))
+          if (checkCircular(before))
           {
             circularList.Add(index);
             return true;
           }
         }
-        checking[index] = false;
+        visited[index] = false;
         return false;
       }
 
@@ -387,7 +387,54 @@ namespace SMPreloader
         return;
       }
 
-      // TODO: sort when no circular deps found
+      // loop over all mods repeatedly, adding any who are either disabled or have all their dependencies met.
+      // this makes this an n^2 sort worst case. while we could likely do better on this complexity, this approach is simple and
+      // has a negligible runtime in up to hundreds of mods.
+      var added = new bool[Mods.Count];
+      var newOrder = new List<ModInfo>();
+      bool areDepsAdded(int index)
+      {
+        if (!beforeDeps.TryGetValue(index, out var befores))
+          return true; // has no deps
+
+        foreach (var bindex in befores)
+          if (!added[bindex])
+            return false;
+
+        return true;
+      }
+
+      while (true)
+      {
+        var delayed = false;
+        var progress = false;
+        foreach (var mod in Mods)
+        {
+          if (added[mod.SortIndex]) continue;
+          if (!mod.Enabled || areDepsAdded(mod.SortIndex))
+          {
+            added[mod.SortIndex] = true;
+            newOrder.Add(mod);
+            progress = true;
+            if (delayed)
+              break; // if we skipped any this iteration, stop as soon as we add a new mod so we don't push others too far forward
+          }
+          else
+            delayed = true;
+        }
+        if (!progress)
+          break;
+      }
+
+      // at this point just add any mods we haven't added yet. we already checked for circular dependencies above so this should
+      // only do anything if there is a bug above.
+      foreach (var mod in Mods)
+      {
+        if (!added[mod.SortIndex])
+          newOrder.Add(mod);
+      }
+
+      Mods = newOrder;
     }
 
     public static void SaveConfig()

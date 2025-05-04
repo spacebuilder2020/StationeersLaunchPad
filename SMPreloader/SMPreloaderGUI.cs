@@ -153,14 +153,18 @@ namespace SMPreloader
       DrawLoadTable();
     }
 
-    private static int DraggingIndex = -1;
+    private static ModInfo DraggingMod = null;
     private static void DrawConfigTable(bool edit = false)
     {
       var mods = SMConfig.Mods;
       var hoverIndex = -1;
 
       if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
-        DraggingIndex = -1;
+        DraggingMod = null;
+
+      var draggingIndex = -1;
+      if (DraggingMod != null)
+        draggingIndex = SMConfig.Mods.IndexOf(DraggingMod);
 
       if (!edit)
         ImGui.BeginDisabled();
@@ -183,12 +187,15 @@ namespace SMPreloader
             ConfigChanged = true;
 
           ImGui.TableNextColumn();
-          ImGui.Selectable($"##rowdrag", i == DraggingIndex, ImGuiSelectableFlags.SpanAllColumns);
+          ImGui.Selectable($"##rowdrag", mod == DraggingMod, ImGuiSelectableFlags.SpanAllColumns);
           if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem))
           {
             hoverIndex = i;
-            if (DraggingIndex == -1 && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-              DraggingIndex = i;
+            if (DraggingMod == null && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+              DraggingMod = mod;
+              draggingIndex = i;
+            }
           }
           ImGui.SameLine();
           ImGui.Text($"{mod.Source}");
@@ -204,17 +211,17 @@ namespace SMPreloader
       if (!edit)
         ImGui.EndDisabled();
 
-      if (DraggingIndex != -1 && hoverIndex != -1 && DraggingIndex != hoverIndex)
+      if (draggingIndex != -1 && hoverIndex != -1 && draggingIndex != hoverIndex)
       {
-        while (DraggingIndex < hoverIndex)
+        while (draggingIndex < hoverIndex)
         {
-          (mods[DraggingIndex + 1], mods[DraggingIndex]) = (mods[DraggingIndex], mods[DraggingIndex + 1]);
-          DraggingIndex++;
+          (mods[draggingIndex + 1], mods[draggingIndex]) = (mods[draggingIndex], mods[draggingIndex + 1]);
+          draggingIndex++;
         }
-        while (DraggingIndex > hoverIndex)
+        while (draggingIndex > hoverIndex)
         {
-          (mods[DraggingIndex - 1], mods[DraggingIndex]) = (mods[DraggingIndex], mods[DraggingIndex - 1]);
-          DraggingIndex--;
+          (mods[draggingIndex - 1], mods[draggingIndex]) = (mods[draggingIndex], mods[draggingIndex - 1]);
+          draggingIndex--;
         }
         ConfigChanged = true;
       }
