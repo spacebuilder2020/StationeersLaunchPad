@@ -109,7 +109,18 @@ namespace SMPreloader
     {
       if (ImGui.Button("Load Mods"))
         SMConfig.LoadState = LoadState.ModsLoading;
+      ImGui.SameLine();
+      DrawExportButton();
+
       DrawConfigTable(edit: true);
+    }
+
+    private static void DrawExportButton()
+    {
+      if (ImGui.Button("Export Mod Package"))
+        SMConfig.ExportModPackage();
+      if (ImGui.IsItemHovered())
+        ImGui.SetTooltip("Create a zip file with all enabled mods for dedicated servers");
     }
 
     private static void DrawModsLoading()
@@ -123,6 +134,9 @@ namespace SMPreloader
     {
       if (ImGui.Button("Start Game"))
         SMConfig.LoadState = LoadState.GameRunning;
+      ImGui.SameLine();
+      DrawExportButton();
+
       DrawLoadTable();
     }
 

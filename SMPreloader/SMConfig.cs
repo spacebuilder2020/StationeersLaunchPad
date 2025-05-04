@@ -13,6 +13,8 @@ using Assets.Scripts.Serialization;
 using Mono.Cecil;
 using Steamworks;
 using Steamworks.Ugc;
+using System.IO.Compression;
+using System.Xml.Serialization;
 
 namespace SMPreloader
 {
@@ -135,10 +137,14 @@ namespace SMPreloader
         modsByPath[mod.Path] = mod;
       }
 
+      var localBasePath = SteamTransport.WorkshopType.Mod.GetLocalDirInfo().FullName;
+
       var newMods = new List<ModInfo>();
       foreach (var modcfg in config.Mods)
       {
         var modPath = (string)modcfg.DirectoryPath;
+        if (modcfg is not CoreModData && !Path.IsPathRooted(modPath))
+          modPath = Path.Combine(localBasePath, modPath);
         if (modsByPath.TryGetValue(modPath, out var mod))
         {
           mod.Enabled = modcfg.Enabled;
@@ -157,6 +163,7 @@ namespace SMPreloader
         mod.Enabled = true;
       }
       Mods = newMods;
+      SaveConfig();
     }
 
     private static void LoadLocalItems()
@@ -165,17 +172,23 @@ namespace SMPreloader
       var localDir = type.GetLocalDirInfo();
       var fileName = type.GetLocalFileName();
 
-      foreach (var dir in localDir.GetDirectories("*", SearchOption.AllDirectories))
+      if (!localDir.Exists)
       {
-        foreach (var file in dir.GetFiles(fileName))
-        {
-          Mods.Add(new ModInfo
-          {
-            Source = ModSource.Local,
-            Wrapped = SteamTransport.ItemWrapper.WrapLocalItem(file, type),
-          });
-        }
+        Logger.Global.LogWarning("local mod folder not found");
+        return;
       }
+
+      foreach (var dir in localDir.GetDirectories("*", SearchOption.AllDirectories))
+        {
+          foreach (var file in dir.GetFiles(fileName))
+          {
+            Mods.Add(new ModInfo
+            {
+              Source = ModSource.Local,
+              Wrapped = SteamTransport.ItemWrapper.WrapLocalItem(file, type),
+            });
+          }
+        }
     }
 
     private static async UniTask LoadWorkshopItems()
@@ -287,6 +300,48 @@ namespace SMPreloader
       var co = (IEnumerator)typeof(SplashBehaviour).GetMethod("AwakeCoroutine", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(SplashBehaviour, new object[] { });
       SplashBehaviour.StartCoroutine(co);
       SMPreloaderGUI.IsActive = false;
+    }
+
+    public static void ExportModPackage()
+    {
+      try
+      {
+        var pkgpath = Path.Combine(StationSaveUtils.DefaultPath, $"modpkg_{DateTime.Now:yyyy-MM-dd_HH-mm-ss-fff}.zip");
+        using (var archive = ZipFile.Open(pkgpath, ZipArchiveMode.Create))
+        {
+          var config = new ModConfig();
+          foreach (var mod in Mods)
+          {
+            if (!mod.Enabled) continue;
+            if (mod.Source == ModSource.Core)
+            {
+              config.Mods.Add(new CoreModData());
+              continue;
+            }
+
+            var dirName = $"{mod.Source}_{mod.Wrapped.DirectoryName}";
+            var root = mod.Wrapped.DirectoryPath;
+            foreach (var file in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
+            {
+              var entryPath = Path.Combine("mods", dirName, file.Substring(root.Length + 1));
+              archive.CreateEntryFromFile(file, entryPath);
+            }
+            config.Mods.Add(new LocalModData(dirName, true));
+          }
+
+          var configEntry = archive.CreateEntry("modconfig.xml");
+          using (var stream = configEntry.Open())
+          {
+            var serializer = new XmlSerializer(typeof(ModConfig));
+            serializer.Serialize(stream, config);
+          }
+        }
+        Process.Start("explorer", $"/select,\"{pkgpath}\"");
+      }
+      catch (Exception ex)
+      {
+        Logger.Global.LogException(ex);
+      }
     }
   }
 }
