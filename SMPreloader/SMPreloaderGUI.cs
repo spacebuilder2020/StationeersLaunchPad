@@ -105,14 +105,27 @@ namespace SMPreloader
       DrawConfigTable();
     }
 
+    private static bool ConfigChanged = false;
     private static void DrawConfiguring()
     {
+      ConfigChanged = false;
+
       if (ImGui.Button("Load Mods"))
         SMConfig.LoadState = LoadState.ModsLoading;
       ImGui.SameLine();
       DrawExportButton();
+      ImGui.SameLine();
+      if (ImGui.Checkbox("Autosort", ref SMConfig.AutoSort))
+        ConfigChanged = true;
 
       DrawConfigTable(edit: true);
+
+      if (ConfigChanged)
+      {
+        if (SMConfig.AutoSort)
+          SMConfig.SortByDeps();
+        SMConfig.SaveConfig();
+      }
     }
 
     private static void DrawExportButton()
@@ -144,7 +157,6 @@ namespace SMPreloader
     private static void DrawConfigTable(bool edit = false)
     {
       var mods = SMConfig.Mods;
-      var changed = false;
       var hoverIndex = -1;
 
       if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
@@ -168,7 +180,7 @@ namespace SMPreloader
 
           ImGui.TableNextColumn();
           if (ImGui.Checkbox("##enabled", ref mod.Enabled))
-            changed = true;
+            ConfigChanged = true;
 
           ImGui.TableNextColumn();
           ImGui.Selectable($"##rowdrag", i == DraggingIndex, ImGuiSelectableFlags.SpanAllColumns);
@@ -204,11 +216,8 @@ namespace SMPreloader
           (mods[DraggingIndex - 1], mods[DraggingIndex]) = (mods[DraggingIndex], mods[DraggingIndex - 1]);
           DraggingIndex--;
         }
-        changed = true;
+        ConfigChanged = true;
       }
-
-      if (changed)
-        SMConfig.SaveConfig();
     }
 
     private static void DrawLoadTable()

@@ -8,6 +8,9 @@ namespace SMPreloader
 {
   public class ModInfo
   {
+    public int SortIndex;
+    public bool DepsWarned;
+
     public ModSource Source;
     public SteamTransport.ItemWrapper Wrapped;
     public Item WorkshopItem;

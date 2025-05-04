@@ -15,6 +15,7 @@ using Steamworks;
 using Steamworks.Ugc;
 using System.IO.Compression;
 using System.Xml.Serialization;
+using Assets.Scripts.Util;
 
 namespace SMPreloader
 {
@@ -34,6 +35,7 @@ namespace SMPreloader
     public static LoadState LoadState = LoadState.Initializing;
     public static bool AutoLoad = true;
     public static Stopwatch AutoStopwatch = new();
+    public static bool AutoSort = true;
 
     public const double AutoWaitTime = 3;
 
@@ -88,6 +90,8 @@ namespace SMPreloader
 
         Logger.Global.Log("Loading Details");
         await LoadDetails();
+
+        SortByDeps();
 
         Logger.Global.Log("Mod Config Initialized");
 
@@ -179,16 +183,16 @@ namespace SMPreloader
       }
 
       foreach (var dir in localDir.GetDirectories("*", SearchOption.AllDirectories))
+      {
+        foreach (var file in dir.GetFiles(fileName))
         {
-          foreach (var file in dir.GetFiles(fileName))
+          Mods.Add(new ModInfo
           {
-            Mods.Add(new ModInfo
-            {
-              Source = ModSource.Local,
-              Wrapped = SteamTransport.ItemWrapper.WrapLocalItem(file, type),
-            });
-          }
+            Source = ModSource.Local,
+            Wrapped = SteamTransport.ItemWrapper.WrapLocalItem(file, type),
+          });
         }
+      }
     }
 
     private static async UniTask LoadWorkshopItems()
@@ -264,6 +268,126 @@ namespace SMPreloader
       {
         mod.AssetBundles.Add(file);
       }
+    }
+
+    public static void SortByDeps()
+    {
+      var afterDeps = new Dictionary<int, List<int>>();
+      var modsById = new Dictionary<ulong, int>();
+      void addDep(int from, int to)
+      {
+        if (from == to)
+          return;
+        var list = afterDeps.GetValueOrDefault(from) ?? new();
+        if (!list.Contains(to))
+          list.Add(to);
+        afterDeps[from] = list;
+      }
+      for (var i = 0; i < Mods.Count; i++)
+      {
+        var mod = Mods[i];
+        mod.SortIndex = i;
+        if (!mod.Enabled)
+        {
+          mod.DepsWarned = false;
+          continue;
+        }
+
+        if (mod.Source == ModSource.Core)
+            modsById[1] = mod.SortIndex;
+          else if (mod.About.WorkshopHandle != 0)
+            modsById[mod.About.WorkshopHandle] = i;
+      }
+      foreach (var mod in Mods)
+      {
+        if (!mod.Enabled) continue;
+        if (mod.Source == ModSource.Core) continue;
+        bool missingDeps = false;
+        foreach (var dep in mod.About.Dependencies ?? new())
+          if (modsById.TryGetValue(dep.Id, out var depIndex))
+            addDep(depIndex, mod.SortIndex); // mod after dep
+          else
+          {
+            missingDeps = true;
+            if (!mod.DepsWarned)
+            {
+              Logger.Global.LogWarning($"{mod.Source} {mod.DisplayName} is missing dependency with workshop id {dep.Id}");
+              var found = false;
+              foreach (var mod2 in Mods)
+              {
+                if (mod2.About?.WorkshopHandle == dep.Id)
+                {
+                  if (!found)
+                    Logger.Global.LogWarning("Possible matches:");
+                  found = true;
+                  Logger.Global.LogWarning($"- {mod2.Source} {mod2.DisplayName}");
+                }
+              }
+              if (!found)
+                Logger.Global.LogWarning("No possible matches installed");
+            }
+          }
+        mod.DepsWarned = missingDeps;
+
+        // LoadBefore and LoadAfter inherited from StationeersMods are the opposite of what you would expect.
+        // LoadBefore is other mods that should be loaded before this one.
+        // LoadAfter is other mods that should be loaded after this one.
+        foreach (var before in mod.About.LoadBefore ?? new())
+          if (modsById.TryGetValue(before.Id, out var beforeIndex))
+            addDep(beforeIndex, mod.SortIndex); // mod after before
+        foreach (var after in mod.About.LoadAfter ?? new())
+          if (modsById.TryGetValue(after.Id, out var afterIndex))
+            addDep(mod.SortIndex, afterIndex); // after after mod
+      }
+
+      var checking = new bool[Mods.Count];
+      var circularList = new List<int>();
+      bool checkCircular(int index)
+      {
+        if (checking[index])
+        {
+          circularList.Add(index);
+          return true;
+        }
+        checking[index] = true;
+        foreach (var after in afterDeps.GetValueOrDefault(index) ?? new())
+        {
+          if (checkCircular(after))
+          {
+            circularList.Add(index);
+            return true;
+          }
+        }
+        checking[index] = false;
+        return false;
+      }
+
+      var foundCircular = false;
+      foreach (var mod in Mods)
+      {
+        if (!mod.Enabled) continue;
+
+        if (checkCircular(mod.SortIndex))
+        {
+          foundCircular = true;
+          break;
+        }
+      }
+
+      if (foundCircular)
+      {
+        Logger.Global.LogError("Circular dependency found in enabled mods:");
+        for (var i = circularList.Count - 1; i >= 0; i--)
+        {
+          var mod = Mods[circularList[i]];
+          Logger.Global.LogError($"- {mod.Source} {mod.DisplayName}");
+        }
+        AutoLoad = false;
+        AutoSort = false;
+        return;
+      }
+
+      // TODO: sort when no circular deps found
     }
 
     public static void SaveConfig()
