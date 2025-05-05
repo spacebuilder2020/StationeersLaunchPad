@@ -35,7 +35,8 @@ namespace SMPreloader
     {
       this.Logger = Logger.Global.WithPrefix($"[{info.DisplayName}]");
       this.Info = info;
-      this.ContentHandler = new(null, new List<IResource>().AsReadOnly(), this.Prefabs.AsReadOnly());
+      var resource = new DummyResource(info.Path);
+      this.ContentHandler = new(resource, new List<IResource>().AsReadOnly(), this.Prefabs.AsReadOnly());
     }
 
     public async UniTask LoadAssembliesSerial()

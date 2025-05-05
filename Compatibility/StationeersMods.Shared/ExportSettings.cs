@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
+// adapted from github.com/jixxed/StationeersMods
 namespace StationeersMods.Shared
 {
   [Flags]

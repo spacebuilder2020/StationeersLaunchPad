@@ -5,6 +5,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
 
+// adapted from github.com/jixxed/StationeersMods
 namespace StationeersMods.Interface
 {
   [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]

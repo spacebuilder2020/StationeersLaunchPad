@@ -3,6 +3,7 @@ using Assets.Scripts;
 using Assets.Scripts.Objects;
 using UnityEngine;
 
+// adapted from github.com/jixxed/StationeersMods
 namespace StationeersMods.Interface
 {
   public class StationeersModsUtility
@@ -28,6 +29,8 @@ namespace StationeersMods.Interface
         _ => throw new ArgumentOutOfRangeException(nameof(shaderType), shaderType, null)
       };
     }
+    public static Material GetMaterial(string materialName) =>
+      (Material)Resources.Load($"Objects/Models/Materials/{materialName}", typeof(Material));
   }
 
   public class StationeersTool
