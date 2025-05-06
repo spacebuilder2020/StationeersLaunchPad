@@ -247,7 +247,14 @@ namespace SMPreloader
       if (mod.Source == ModSource.Core)
         return;
 
-      mod.About = XmlSerialization.Deserialize<ModAbout>(mod.Wrapped.FilePathFullName, "ModMetadata");
+      mod.About = XmlSerialization.Deserialize<ModAbout>(mod.Wrapped.FilePathFullName, "ModMetadata") ??
+        new ModAbout
+        {
+          Name = $"[Invalid About.xml] {mod.Wrapped.DirectoryName}",
+          Author = "",
+          Version = "",
+          Description = "",
+        };
 
       foreach (var file in Directory.GetFiles(mod.Wrapped.DirectoryPath, "*.dll", SearchOption.AllDirectories))
       {
