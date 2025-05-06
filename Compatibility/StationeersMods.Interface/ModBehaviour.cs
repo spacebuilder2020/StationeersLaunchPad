@@ -35,6 +35,9 @@ namespace StationeersMods.Interface
 
     protected ModBehaviour()
     {
+      var metadata = GetMetadata(this);
+      if (metadata != null)
+        this.Config = new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, metadata.GUID + ".cfg"), false, metadata);
     }
 
     public static StationeersMod GetMetadata(object plugin)

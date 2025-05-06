@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using BepInEx;
+using BepInEx.Configuration;
 using Cysharp.Threading.Tasks;
 using StationeersMods.Interface;
 using StationeersMods.Shared;
@@ -27,6 +29,8 @@ namespace StationeersLaunchPad
     public List<Type> SMEntryTypes = new();
     public List<Type> BepinexEntryTypes = new();
     public List<GameObject> EntryPrefabs = new();
+
+    public List<ConfigFile> ConfigFiles = new();
 
     public bool LoadFinished = false;
     public bool LoadFailed = false;
@@ -119,13 +123,16 @@ namespace StationeersLaunchPad
         {
           modBehaviour.contentHandler = this.ContentHandler;
           modBehaviour.OnLoaded(this.ContentHandler);
+          this.ConfigFiles.Add(modBehaviour.Config);
         }
 
         foreach (var type in this.BepinexEntryTypes)
         {
           var gameObj = new GameObject();
           GameObject.DontDestroyOnLoad(gameObj);
-          gameObj.AddComponent(type);
+          var component = gameObj.AddComponent(type);
+          if (component is BaseUnityPlugin plugin)
+            this.ConfigFiles.Add(plugin.Config);
         }
 
         this.Logger.Log("Done");

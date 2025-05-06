@@ -311,9 +311,7 @@ namespace StationeersLaunchPad
         if (mod.Source == ModSource.Core) continue;
         bool missingDeps = false;
         foreach (var dep in mod.About.Dependencies ?? new())
-          if (modsById.TryGetValue(dep.Id, out var depIndex))
-            addDep(mod.SortIndex, depIndex); // dep after mod
-          else
+          if (!modsById.ContainsKey(dep.Id))
           {
             missingDeps = true;
             if (!mod.DepsWarned)
