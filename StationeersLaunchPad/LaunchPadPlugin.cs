@@ -11,14 +11,14 @@ using Steamworks;
 using UnityEngine;
 using UnityEngine.LowLevel;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
-  public class SMPreloaderPlugin : BaseUnityPlugin
+  public class LaunchPadPlugin : BaseUnityPlugin
   {
-    public const string pluginGuid = "unlucky.smpreloader";
-    public const string pluginName = "SMPreloader";
-    public const string pluginVersion = "0.1";
+    public const string pluginGuid = "stationeers.launchpad";
+    public const string pluginName = "StationeersLaunchPad";
+    public const string pluginVersion = "0.1.0";
 
     void Awake()
     {
@@ -34,17 +34,17 @@ namespace SMPreloader
       var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
       PlayerLoopHelper.Initialize(ref playerLoop);
 
-      SMConfig.Run();
+      LaunchPadConfig.Run();
     }
   }
 
   [HarmonyPatch]
-  static class PreloaderPatches
+  static class LaunchPadPatches
   {
     [HarmonyPatch(typeof(SplashBehaviour), "Awake"), HarmonyPrefix]
     static bool SplashAwake(SplashBehaviour __instance)
     {
-      SMConfig.SplashBehaviour = __instance;
+      LaunchPadConfig.SplashBehaviour = __instance;
       Application.targetFrameRate = 60;
       typeof(SplashBehaviour).GetProperty("IsActive").SetValue(null, true);
       return false;
@@ -53,9 +53,9 @@ namespace SMPreloader
     [HarmonyPatch(typeof(SplashBehaviour), nameof(SplashBehaviour.Draw)), HarmonyPrefix]
     static bool SplashDraw()
     {
-      if (SMPreloaderGUI.IsActive)
+      if (LaunchPadGUI.IsActive)
       {
-        SMPreloaderGUI.Draw();
+        LaunchPadGUI.Draw();
         return false;
       }
       return true;

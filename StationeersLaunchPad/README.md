@@ -1,24 +1,24 @@
-# SMPreloader
+# StationeersLaunchPad
 
 ## How it works
 
-`SMPreloaderPlugin` Bepinex plugin patches the `SplashBehaviour` so it doesn't start loading the game immediately, then calls `SMConfig.Run`. The patch to `SplashBehavour.Draw` draws a mod loading window (`SMPreloaderGUI`) instead of the normal progress bar.
+`LaunchPadPlugin` Bepinex plugin patches the `SplashBehaviour` so it doesn't start loading the game immediately, then calls `LaunchPadConfig.Run`. The patch to `SplashBehavour.Draw` draws a mod loading window (`LaunchPadGUI`) instead of the normal progress bar.
 
-`SMConfig` loads the list of local and workshop mods, then the `modconfig.xml` file and sets up a tentantive runtime mod configuration. If the user doesn't click the loading window in a fixed time after startup (currently 3 seconds), it will automatically start loading the mod assemblies and resources, and then the game (handled in `SMConfig.Run`). 
+`LaunchPadConfig` loads the list of local and workshop mods, then the `modconfig.xml` file and sets up a tentantive runtime mod configuration. If the user doesn't click the loading window in a fixed time after startup (currently 3 seconds), it will automatically start loading the mod assemblies and resources, and then the game (handled in `LaunchPadConfig.Run`). 
 
-If the user clicks the loading window (`SMPreloaderGUI.DrawAutoLoad`), it opens a larger configuration editor allowing changes to enabled mods and order before load (`SMPreloaderGUI.DrawManualLoad`).
+If the user clicks the loading window (`LaunchPadGUI.DrawAutoLoad`), it opens a larger configuration editor allowing changes to enabled mods and order before load (`LaunchPadGUI.DrawManualLoad`).
 
 The loading is currently done one mod at a time (`LinearLoadStrategy` in `ModLoader.cs`), but could be parallelized later based on dependencies if load time is an issue.
 
 ## Code Organization
 
-### [SMPreloaderPlugin.cs](SMPreloaderPlugin.cs)
+### [LaunchPadPlugin.cs](LaunchPadPlugin.cs)
 Bepinex plugin entrypoint to the mod loader
 
-### [SMConfig.cs](SMConfig.cs)
+### [LaunchPadConfig.cs](LaunchPadConfig.cs)
 Main workflow logic of loading mod configuration and mods
 
-### [SMPreloaderGUI.cs](SMPreloaderGUI.cs)
+### [LaunchPadGUI.cs](LaunchPadGUI.cs)
 IMGui mod configuration window
 
 ### [ModLoader.cs](ModLoader.cs)

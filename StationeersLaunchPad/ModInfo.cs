@@ -4,7 +4,7 @@ using System.Xml.Serialization;
 using Assets.Scripts.Networking.Transports;
 using Steamworks.Ugc;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public class ModInfo
   {

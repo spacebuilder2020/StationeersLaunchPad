@@ -9,7 +9,7 @@ using StationeersMods.Interface;
 using StationeersMods.Shared;
 using UnityEngine;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public class LoadedMod
   {

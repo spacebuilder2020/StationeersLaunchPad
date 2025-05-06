@@ -9,7 +9,7 @@ using StationeersMods.Interface;
 using StationeersMods.Shared;
 using UnityEngine;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public static class ModLoader
   {
@@ -135,7 +135,7 @@ namespace SMPreloader
   {
     public override async UniTask Load()
     {
-      foreach (var modInfo in SMConfig.Mods)
+      foreach (var modInfo in LaunchPadConfig.Mods)
       {
         if (!modInfo.Enabled) continue;
         if (modInfo.Source == ModSource.Core) continue;
@@ -155,7 +155,7 @@ namespace SMPreloader
         {
           mod.Logger.LogException(ex);
           mod.LoadFailed = true;
-          SMConfig.AutoLoad = false;
+          LaunchPadConfig.AutoLoad = false;
         }
       }
     }

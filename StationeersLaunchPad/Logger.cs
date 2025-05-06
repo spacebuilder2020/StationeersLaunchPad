@@ -3,7 +3,7 @@ using System.Diagnostics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public class Logger
   {

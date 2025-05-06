@@ -5,9 +5,9 @@ using ImGuiNET;
 using UI.ImGuiUi;
 using UnityEngine;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
-  public static class SMPreloaderGUI
+  public static class LaunchPadGUI
   {
     public static bool IsActive = true;
 
@@ -17,7 +17,7 @@ namespace SMPreloader
         return;
       PushDefaultStyle();
 
-      if (SMConfig.AutoLoad)
+      if (LaunchPadConfig.AutoLoad)
         DrawAutoLoad();
       else
         DrawManualLoad();
@@ -36,9 +36,9 @@ namespace SMPreloader
       ImGui.SetNextWindowPos(topLeft);
       ImGui.Begin("##preloaderauto", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings);
 
-      var autoTime = (int)Math.Ceiling(SMConfig.AutoWaitTime - SMConfig.AutoStopwatch.Elapsed.TotalSeconds);
+      var autoTime = (int)Math.Ceiling(LaunchPadConfig.AutoWaitTime - LaunchPadConfig.AutoStopwatch.Elapsed.TotalSeconds);
 
-      ImGui.Text("SMPreloader " + (SMConfig.LoadState switch
+      ImGui.Text("LaunchPad " + (LaunchPadConfig.LoadState switch
       {
         LoadState.Initializing => "Initializing",
         LoadState.Configuring => $"Loading mods in {autoTime}",
@@ -56,7 +56,7 @@ namespace SMPreloader
       ImGui.TextColored(Vector4.one * 0.5f, "click to configure");
 
       if (ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-        SMConfig.AutoLoad = false;
+        LaunchPadConfig.AutoLoad = false;
 
       ImGui.End();
     }
@@ -75,7 +75,7 @@ namespace SMPreloader
       ImGui.BeginColumns("##columns", 2, ImGuiOldColumnFlags.NoResize | ImGuiOldColumnFlags.GrowParentContentsSize);
 
       ImGui.BeginChild("##left");
-      switch (SMConfig.LoadState)
+      switch (LaunchPadConfig.LoadState)
       {
         case LoadState.Initializing:
           DrawInitializing();
@@ -111,27 +111,27 @@ namespace SMPreloader
       ConfigChanged = false;
 
       if (ImGui.Button("Load Mods"))
-        SMConfig.LoadState = LoadState.ModsLoading;
+        LaunchPadConfig.LoadState = LoadState.ModsLoading;
       ImGui.SameLine();
       DrawExportButton();
       ImGui.SameLine();
-      if (ImGui.Checkbox("Autosort", ref SMConfig.AutoSort))
+      if (ImGui.Checkbox("Autosort", ref LaunchPadConfig.AutoSort))
         ConfigChanged = true;
 
       DrawConfigTable(edit: true);
 
       if (ConfigChanged)
       {
-        if (SMConfig.AutoSort)
-          SMConfig.SortByDeps();
-        SMConfig.SaveConfig();
+        if (LaunchPadConfig.AutoSort)
+          LaunchPadConfig.SortByDeps();
+        LaunchPadConfig.SaveConfig();
       }
     }
 
     private static void DrawExportButton()
     {
       if (ImGui.Button("Export Mod Package"))
-        SMConfig.ExportModPackage();
+        LaunchPadConfig.ExportModPackage();
       if (ImGui.IsItemHovered())
         ImGui.SetTooltip("Create a zip file with all enabled mods for dedicated servers");
     }
@@ -146,7 +146,7 @@ namespace SMPreloader
     private static void DrawModsLoaded()
     {
       if (ImGui.Button("Start Game"))
-        SMConfig.LoadState = LoadState.GameRunning;
+        LaunchPadConfig.LoadState = LoadState.GameRunning;
       ImGui.SameLine();
       DrawExportButton();
 
@@ -156,7 +156,7 @@ namespace SMPreloader
     private static ModInfo DraggingMod = null;
     private static void DrawConfigTable(bool edit = false)
     {
-      var mods = SMConfig.Mods;
+      var mods = LaunchPadConfig.Mods;
       var hoverIndex = -1;
 
       if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
@@ -164,7 +164,7 @@ namespace SMPreloader
 
       var draggingIndex = -1;
       if (DraggingMod != null)
-        draggingIndex = SMConfig.Mods.IndexOf(DraggingMod);
+        draggingIndex = LaunchPadConfig.Mods.IndexOf(DraggingMod);
 
       if (!edit)
         ImGui.BeginDisabled();
@@ -229,7 +229,7 @@ namespace SMPreloader
 
     private static void DrawLoadTable()
     {
-      var mods = SMConfig.Mods;
+      var mods = LaunchPadConfig.Mods;
 
       if (ImGui.BeginTable("##loadtable", 3, ImGuiTableFlags.SizingFixedFit))
       {

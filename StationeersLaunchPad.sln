@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersMods.Shared", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RG.ImGui", "Compatibility/RG.ImGui/RG.ImGui.csproj", "{36de1849-6373-4cbd-a9ea-a8a2afb4047a}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMPreloader", "SMPreloader/SMPreloader.csproj", "{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeersLaunchPad", "StationeersLaunchPad/StationeersLaunchPad.csproj", "{99aa5fa7-3c70-4213-ada2-d6d745c38ac1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

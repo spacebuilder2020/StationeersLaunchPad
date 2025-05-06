@@ -17,7 +17,7 @@ using System.IO.Compression;
 using System.Xml.Serialization;
 using Assets.Scripts.Util;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public enum LoadState
   {
@@ -27,7 +27,7 @@ namespace SMPreloader
     ModsLoaded,
     GameRunning
   }
-  public static class SMConfig
+  public static class LaunchPadConfig
   {
     public static SplashBehaviour SplashBehaviour;
     public static List<ModInfo> Mods = new();
@@ -477,7 +477,7 @@ namespace SMPreloader
       LoadState = LoadState.GameRunning;
       var co = (IEnumerator)typeof(SplashBehaviour).GetMethod("AwakeCoroutine", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(SplashBehaviour, new object[] { });
       SplashBehaviour.StartCoroutine(co);
-      SMPreloaderGUI.IsActive = false;
+      LaunchPadGUI.IsActive = false;
     }
 
     public static void ExportModPackage()

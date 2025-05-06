@@ -2,7 +2,7 @@
   <Import Project="$(SolutionDir)global.VS.props" />
   <Import Project="$(SolutionDir)globalRefs.VS.props" />
   <PropertyGroup>
-    <AssemblyName>SMPreloader</AssemblyName>
+    <AssemblyName>StationeersLaunchPad</AssemblyName>
     <IsServer>False</IsServer>
   </PropertyGroup>
   <ItemGroup>

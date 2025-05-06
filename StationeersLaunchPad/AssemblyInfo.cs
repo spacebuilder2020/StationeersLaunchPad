@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SMPreloader
+namespace StationeersLaunchPad
 {
   public class AssemblyInfo
   {
