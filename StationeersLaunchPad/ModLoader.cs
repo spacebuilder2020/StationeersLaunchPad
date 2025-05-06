@@ -136,11 +136,10 @@ namespace StationeersLaunchPad
   {
     public override async UniTask Load()
     {
-      // load in 4 steps:
+      // load in 3 steps:
       // - load all assemblies in order without resolving types
       // - resolve types in assemblies
-      // - load in all asset bundles
-      // - find and load entry points
+      // - load asset bundles, find and load entry points
       // each step is done in the order the mods are configured
       // if a mod fails to load, the following steps will be skipped for that mod
 
@@ -188,18 +187,6 @@ namespace StationeersLaunchPad
         try
         {
           await mod.LoadAssetsSerial();
-        }
-        catch (Exception ex)
-        {
-          modFailed(mod, ex);
-        }
-      }
-      foreach (var modInfo in enabledMods)
-      {
-        var mod = modInfo.Loaded;
-        if (mod.LoadFailed) continue;
-        try
-        {
           await mod.FindEntrypoints();
           await mod.LoadEntrypoints();
         }
