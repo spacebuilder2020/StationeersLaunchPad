@@ -61,6 +61,14 @@ namespace StationeersLaunchPad
       ImGui.End();
     }
 
+    private static Vector4 TextColor => _colors[(int)ImGuiCol.Text];
+    private static Vector4 TextDisabledColor => _colors[(int)ImGuiCol.TextDisabled];
+    private static Vector4 LoadStateColor(LoadState expected) => LaunchPadConfig.LoadState == expected ? TextColor : TextDisabledColor;
+    private static Vector4 LoadStateColor(LoadState expected1, LoadState expected2) =>
+      LaunchPadConfig.LoadState == expected1 || LaunchPadConfig.LoadState == expected2 ? TextColor : TextDisabledColor;
+
+    private static bool ConfigChanged = false;
+
     private static void DrawManualLoad()
     {
       var screenSize = ImguiHelper.ScreenSize;
@@ -75,58 +83,80 @@ namespace StationeersLaunchPad
       ImGui.BeginColumns("##columns", 2, ImGuiOldColumnFlags.NoResize | ImGuiOldColumnFlags.GrowParentContentsSize);
 
       ImGui.BeginChild("##left");
+
+      ImGui.TextColored(LoadStateColor(LoadState.Initializing), "Initialize");
+      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+      ImGui.TextColored(LoadStateColor(LoadState.Configuring), "Setup Mods");
+      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+      if (LaunchPadConfig.LoadState == LoadState.Configuring)
+      {
+        if (ImGui.Button("Load Mods"))
+          LaunchPadConfig.LoadState = LoadState.ModsLoading;
+      }
+      else
+        ImGui.TextColored(LoadStateColor(LoadState.ModsLoading, LoadState.ModsLoaded), "Load Mods");
+      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+      if (LaunchPadConfig.LoadState == LoadState.ModsLoaded)
+      {
+        if (ImGui.Button("Start Game"))
+          LaunchPadConfig.LoadState = LoadState.GameRunning;
+      }
+      else
+        ImGui.TextColored(TextDisabledColor, "Start Game");
+
       switch (LaunchPadConfig.LoadState)
       {
         case LoadState.Initializing:
-          DrawInitializing();
-          break;
         case LoadState.Configuring:
-          DrawConfiguring();
-          break;
+          {
+            ConfigChanged = false;
+
+            if (LaunchPadConfig.LoadState == LoadState.Initializing)
+            {
+              ImGui.Text(""); ImGui.Spacing();
+            }
+            else
+            {
+              DrawExportButton();
+              ImGui.SameLine();
+              if (ImGui.Checkbox("Autosort", ref LaunchPadConfig.AutoSort))
+                ConfigChanged = true;
+            }
+
+            DrawConfigTable(edit: LaunchPadConfig.LoadState == LoadState.Configuring);
+
+            if (ConfigChanged)
+            {
+              if (LaunchPadConfig.AutoSort)
+                LaunchPadConfig.SortByDeps();
+              LaunchPadConfig.SaveConfig();
+            }
+            break;
+          }
         case LoadState.ModsLoading:
-          DrawModsLoading();
-          break;
         case LoadState.ModsLoaded:
-          DrawModsLoaded();
-          break;
+          {
+            if (LaunchPadConfig.LoadState == LoadState.ModsLoading)
+            {
+              ImGui.Text(""); ImGui.Spacing();
+            }
+            else
+            {
+              DrawExportButton();
+            }
+
+            DrawLoadTable();
+            break;
+          }
       }
+
       ImGui.EndChild();
 
       ImGui.NextColumn();
       DrawLogs();
       ImGui.EndColumns();
       ImGui.End();
-    }
-
-    private static void DrawInitializing()
-    {
-      ImGui.Text("");
-      ImGui.Spacing();
-      DrawConfigTable();
-    }
-
-    private static bool ConfigChanged = false;
-    private static void DrawConfiguring()
-    {
-      ConfigChanged = false;
-
-      if (ImGui.Button("Load Mods"))
-        LaunchPadConfig.LoadState = LoadState.ModsLoading;
-      ImGui.SameLine();
-      DrawExportButton();
-      ImGui.SameLine();
-      if (ImGui.Checkbox("Autosort", ref LaunchPadConfig.AutoSort))
-        ConfigChanged = true;
-
-      DrawConfigTable(edit: true);
-
-      if (ConfigChanged)
-      {
-        if (LaunchPadConfig.AutoSort)
-          LaunchPadConfig.SortByDeps();
-        LaunchPadConfig.SaveConfig();
-      }
-    }
+  }
 
     private static void DrawExportButton()
     {
@@ -134,23 +164,6 @@ namespace StationeersLaunchPad
         LaunchPadConfig.ExportModPackage();
       if (ImGui.IsItemHovered())
         ImGui.SetTooltip("Create a zip file with all enabled mods for dedicated servers");
-    }
-
-    private static void DrawModsLoading()
-    {
-      ImGui.Text("");
-      ImGui.Spacing();
-      DrawLoadTable();
-    }
-
-    private static void DrawModsLoaded()
-    {
-      if (ImGui.Button("Start Game"))
-        LaunchPadConfig.LoadState = LoadState.GameRunning;
-      ImGui.SameLine();
-      DrawExportButton();
-
-      DrawLoadTable();
     }
 
     private static ModInfo DraggingMod = null;
