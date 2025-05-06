@@ -5,12 +5,20 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
 ## Installation
 
 ### Fresh
-- Install Bepinex 5.x into game folder
-- Copy SMPreloader dlls into Bepinex/plugins in game folder
+- Install BepInEx 5.x into game folder
+  - find latest 5.x [BepInEx Release](https://github.com/BepInEx/BepInEx/releases), and download win_x64 zip
+  - extract into game folder (right click game in steam, `Manage->Browse local files`)
+  - should end up with `BepInEx` folder and `doorstop_config.ini` file in same folder as rocketstation.exe
+- Install SMPreloader
+  - download latest client zip from [Releases](https://github.com/tsholmes/StationeersModPreloader/releases)
+  - extract into `BepInEx/plugins` folder
 
 ### Switch from StationeersMods
-- Remove StationeersMods folder from Bepinex/plugins in game folder
-- Copy SMPreloader dlls into Bepinex/plugins in game folder
+- Remove `StationeersMods` folder from `Bepinex/plugins` in game folder
+  - to open game folder: right click game in steam, `Manage->Browse local files`
+- Install SMPreloader
+  - download latest client zip from [Releases](https://github.com/tsholmes/StationeersModPreloader/releases)
+  - extract into `BepInEx/plugins` folder
 
 ## Usage
 
@@ -21,8 +29,13 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
 ## Dedicated Server
 
 - Install Bepinex 5.x into dedicated server folder
-- Copy SMPreloader dlls into Bepinex/plugins in dedicated server folder
-- On the regular game client, click the loading window at the bottom on startup to open configuration
+  - find latest 5.x [BepInEx Release](https://github.com/BepInEx/BepInEx/releases), and download win_x64 zip
+  - extract into game folder (right click game in steam, `Manage->Browse local files`)
+  - should end up with `BepInEx` folder and `doorstop_config.ini` file in same folder as `rocketstation_DedicatedServer.exe`
+- Install SMPreloader
+  - download latest client zip from [Releases](https://github.com/tsholmes/StationeersModPreloader/releases)
+  - extract into `BepInEx/plugins` folder
+- In the game client, click the loading window at the bottom on startup to open configuration
   - enable/disable and reorder mods to match what you want installed on the server
   - click `Export Mod Package` to create a zip file containing the enabled mods and config file
   - extract the zip file into the dedicated server folder (should create `modconfig.xml` and `mods` folder in same folder as `rocketstation_DedicatedServer.exe`)
