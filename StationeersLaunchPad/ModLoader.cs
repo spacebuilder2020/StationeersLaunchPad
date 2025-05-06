@@ -38,7 +38,8 @@ namespace StationeersLaunchPad
         for (var i = 0; i < st.FrameCount; i++)
         {
           var frame = st.GetFrame(i);
-          if (AssemblyToMod.TryGetValue(frame.GetMethod().DeclaringType.Assembly, out mod))
+          var assembly = frame.GetMethod()?.DeclaringType?.Assembly;
+          if (assembly != null && AssemblyToMod.TryGetValue(assembly, out mod))
             return true;
         }
       }
@@ -135,11 +136,25 @@ namespace StationeersLaunchPad
   {
     public override async UniTask Load()
     {
-      foreach (var modInfo in LaunchPadConfig.Mods)
-      {
-        if (!modInfo.Enabled) continue;
-        if (modInfo.Source == ModSource.Core) continue;
+      // load in 4 steps:
+      // - load all assemblies in order without resolving types
+      // - resolve types in assemblies
+      // - load in all asset bundles
+      // - find and load entry points
+      // each step is done in the order the mods are configured
+      // if a mod fails to load, the following steps will be skipped for that mod
 
+      var enabledMods = LaunchPadConfig.Mods.Where(mod => mod.Enabled && mod.Source != ModSource.Core).ToList();
+
+      static void modFailed(LoadedMod mod, Exception ex)
+      {
+        mod.Logger.LogException(ex);
+        mod.LoadFailed = true;
+        LaunchPadConfig.AutoLoad = false;
+      }
+
+      foreach (var modInfo in enabledMods)
+      {
         var mod = new LoadedMod(modInfo);
         modInfo.Loaded = mod;
         ModLoader.LoadedMods.Add(mod);
@@ -147,15 +162,50 @@ namespace StationeersLaunchPad
         try
         {
           await mod.LoadAssembliesSerial();
+        }
+        catch (Exception ex)
+        {
+          modFailed(mod, ex);
+        }
+      }
+      foreach (var modInfo in enabledMods)
+      {
+        var mod = modInfo.Loaded;
+        if (mod.LoadFailed) continue;
+        try
+        {
+          mod.ResolveAssemblies();
+        }
+        catch (Exception ex)
+        {
+          modFailed(mod, ex);
+        }
+      }
+      foreach (var modInfo in enabledMods)
+      {
+        var mod = modInfo.Loaded;
+        if (mod.LoadFailed) continue;
+        try
+        {
           await mod.LoadAssetsSerial();
+        }
+        catch (Exception ex)
+        {
+          modFailed(mod, ex);
+        }
+      }
+      foreach (var modInfo in enabledMods)
+      {
+        var mod = modInfo.Loaded;
+        if (mod.LoadFailed) continue;
+        try
+        {
           await mod.FindEntrypoints();
           await mod.LoadEntrypoints();
         }
         catch (Exception ex)
         {
-          mod.Logger.LogException(ex);
-          mod.LoadFailed = true;
-          LaunchPadConfig.AutoLoad = false;
+          modFailed(mod, ex);
         }
       }
     }

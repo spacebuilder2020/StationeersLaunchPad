@@ -153,7 +153,20 @@ namespace StationeersLaunchPad
       ImGui.EndChild();
 
       ImGui.NextColumn();
-      DrawLogs();
+      if (ImGui.BeginTabBar("##righttabs"))
+      {
+        if (ImGui.BeginTabItem("Logs"))
+        {
+          DrawLogs();
+          ImGui.EndTabItem();
+        }
+        if (LaunchPadConfig.LoadState > LoadState.ModsLoading && ImGui.BeginTabItem("Config"))
+        {
+          DrawConfig();
+          ImGui.EndTabItem();
+        }
+        ImGui.EndTabBar();
+      }
       ImGui.EndColumns();
       ImGui.End();
   }
@@ -270,13 +283,13 @@ namespace StationeersLaunchPad
             ImGui.TextColored(new Vector4(0, 1, 0, 1), "+");
 
           ImGui.TableNextColumn();
-          var selected = LogFilter == mod.Loaded?.Logger;
-          if (ImGui.Selectable("##logselect", selected, ImGuiSelectableFlags.SpanAllColumns))
+          var isSelected = Selected == mod;
+          if (ImGui.Selectable("##scopeselect", isSelected, ImGuiSelectableFlags.SpanAllColumns))
           {
-            if (selected)
-              LogFilter = Logger.Global;
+            if (isSelected)
+              Selected = null;
             else
-              LogFilter = mod.Loaded?.Logger ?? Logger.Global;
+              Selected = mod;
             ScrollLogsToEnd = true;
           }
           ImGui.SameLine();
@@ -291,14 +304,16 @@ namespace StationeersLaunchPad
       }
     }
 
-    private static Logger LogFilter = Logger.Global;
+    private static ModInfo Selected = null;
     private static bool ScrollLogsToEnd = false;
     private static int LastLogCount = 0;
     private static void DrawLogs()
     {
       ImGui.BeginChild("##logs", ImGuiWindowFlags.HorizontalScrollbar);
 
-      var logLines = LogFilter.Lines;
+      var logger = Selected?.Loaded?.Logger ?? Logger.Global;
+
+      var logLines = logger.Lines;
       var totalCount = logLines.TotalCount;
       if (totalCount != LastLogCount)
       {
@@ -324,7 +339,7 @@ namespace StationeersLaunchPad
           for (var i = 0; i < lineCount; i++)
             logText.AppendLine(logLines[i].Text);
           ImGui.SetClipboardText(logText.ToString());
-          LogFilter.Log("Logs copied to clipboard");
+          logger.Log("Logs copied to clipboard");
         }
       }
 
@@ -339,6 +354,38 @@ namespace StationeersLaunchPad
         ImGui.TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
       else
         ImGui.TextColored(new Vector4(1, 0, 0, 1), line.Text);
+    }
+
+    private static void DrawConfig()
+    {
+      if (Selected == null || Selected.Source == ModSource.Core)
+      {
+        ImGui.TextColored(TextDisabledColor, "Selected a mod to edit configuration");
+        return;
+      }
+      var configFiles = Selected.Loaded?.ConfigFiles;
+      var configCount = 0;
+      if (configFiles != null)
+      {
+        foreach (var file in configFiles)
+        {
+          configCount += file.Count;
+        }
+      }
+      if (configCount == 0)
+      {
+        ImGui.TextColored(TextDisabledColor, $"{Selected.DisplayName} does not have any configuration");
+        return;
+      }
+
+      foreach (var configFile in configFiles)
+      {
+        ImGui.Text(configFile.ConfigFilePath);
+        foreach (var key in configFile.Keys)
+        {
+          ImGui.Text($"[{key.Section}] {key.Key}");
+        }
+      }
     }
 
     private static Vector4[] _colors;

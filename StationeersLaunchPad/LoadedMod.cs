@@ -56,6 +56,12 @@ namespace StationeersLaunchPad
       this.Assemblies.AddRange(assemblies);
     }
 
+    public void ResolveAssemblies()
+    {
+      foreach (var assembly in this.Assemblies)
+        assembly.GetTypes();
+    }
+
     public async UniTask LoadAssetsSerial()
     {
       foreach (var path in this.Info.AssetBundles)
@@ -123,7 +129,8 @@ namespace StationeersLaunchPad
         {
           modBehaviour.contentHandler = this.ContentHandler;
           modBehaviour.OnLoaded(this.ContentHandler);
-          this.ConfigFiles.Add(modBehaviour.Config);
+          if (modBehaviour.Config != null)
+            this.ConfigFiles.Add(modBehaviour.Config);
         }
 
         foreach (var type in this.BepinexEntryTypes)
@@ -131,7 +138,7 @@ namespace StationeersLaunchPad
           var gameObj = new GameObject();
           GameObject.DontDestroyOnLoad(gameObj);
           var component = gameObj.AddComponent(type);
-          if (component is BaseUnityPlugin plugin)
+          if (component is BaseUnityPlugin plugin && plugin.Config != null)
             this.ConfigFiles.Add(plugin.Config);
         }
 
