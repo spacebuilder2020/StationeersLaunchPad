@@ -130,7 +130,10 @@ namespace StationeersLaunchPad
           modBehaviour.contentHandler = this.ContentHandler;
           modBehaviour.OnLoaded(this.ContentHandler);
           if (modBehaviour.Config != null)
+          {
+            modBehaviour.Config.SettingChanged += (_, _) => this.DirtyConfig();
             this.ConfigFiles.Add(modBehaviour.Config);
+          }
         }
 
         foreach (var type in this.BepinexEntryTypes)
@@ -139,8 +142,13 @@ namespace StationeersLaunchPad
           GameObject.DontDestroyOnLoad(gameObj);
           var component = gameObj.AddComponent(type);
           if (component is BaseUnityPlugin plugin && plugin.Config != null)
+          {
+            plugin.Config.SettingChanged += (_, _) => this.DirtyConfig();
             this.ConfigFiles.Add(plugin.Config);
+          }
         }
+
+        this.ConfigFiles.Sort((a, b) => a.ConfigFilePath.CompareTo(b.ConfigFilePath));
 
         this.Logger.Log("Done");
 
@@ -188,6 +196,69 @@ namespace StationeersLaunchPad
       var name = Path.GetFileName(path);
       this.Logger.Log($"Loading AssetBundle {name} ExportSettings");
       return ModLoader.LoadBundleExportSettings(bundle);
+    }
+
+    private bool _configDirty = true;
+    private void DirtyConfig() { this._configDirty = true; }
+
+    private List<SortedConfigFile> _cachedSortedConfigs = new();
+    private int _cachedTotalConfigs = 0;
+
+    public List<SortedConfigFile> GetSortedConfigs()
+    {
+      var totalCount = 0;
+      foreach (var config in this.ConfigFiles)
+        totalCount += config.Count;
+      if (this._configDirty || totalCount != this._cachedTotalConfigs)
+      {
+        var sortedConfigs = new List<SortedConfigFile>();
+        foreach (var config in this.ConfigFiles)
+          if (config.Count > 0)
+            sortedConfigs.Add(new SortedConfigFile(config));
+
+        this._cachedTotalConfigs = totalCount;
+        this._cachedSortedConfigs = sortedConfigs;
+        this._configDirty = false;
+      }
+      return this._cachedSortedConfigs;
+    }
+  }
+
+  public class SortedConfigFile
+  {
+    public readonly ConfigFile ConfigFile;
+    public readonly string FileName;
+    public readonly List<SortedConfigCategory> Categories;
+
+    public SortedConfigFile(ConfigFile configFile)
+    {
+      this.ConfigFile = configFile;
+      this.FileName = Path.GetFileName(configFile.ConfigFilePath);
+      var categories = new List<SortedConfigCategory>();
+      foreach (var group in configFile.Select(entry => entry.Value).GroupBy(entry => entry.Definition.Section))
+      {
+        categories.Add(new SortedConfigCategory(
+          configFile,
+          group.Key,
+          group.OrderBy(entry => entry.Definition.Key).ToList()
+        ));
+      }
+      categories.Sort((a, b) => a.Category.CompareTo(b.Category));
+      this.Categories = categories;
+    }
+  }
+
+  public class SortedConfigCategory
+  {
+    public readonly ConfigFile ConfigFile;
+    public readonly string Category;
+    public readonly List<ConfigEntryBase> Entries;
+
+    public SortedConfigCategory(ConfigFile configFile, string category, List<ConfigEntryBase> entries)
+    {
+      this.ConfigFile = configFile;
+      this.Category = category;
+      this.Entries = entries;
     }
   }
 }

@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Text;
 using Assets.Scripts;
+using BepInEx.Configuration;
 using ImGuiNET;
 using UI.ImGuiUi;
 using UnityEngine;
@@ -169,7 +171,7 @@ namespace StationeersLaunchPad
       }
       ImGui.EndColumns();
       ImGui.End();
-  }
+    }
 
     private static void DrawExportButton()
     {
@@ -363,28 +365,80 @@ namespace StationeersLaunchPad
         ImGui.TextColored(TextDisabledColor, "Selected a mod to edit configuration");
         return;
       }
-      var configFiles = Selected.Loaded?.ConfigFiles;
-      var configCount = 0;
-      if (configFiles != null)
-      {
-        foreach (var file in configFiles)
-        {
-          configCount += file.Count;
-        }
-      }
-      if (configCount == 0)
+      var configFiles = Selected.Loaded?.GetSortedConfigs();
+      if (configFiles.Count == 0)
       {
         ImGui.TextColored(TextDisabledColor, $"{Selected.DisplayName} does not have any configuration");
         return;
       }
 
+      ImGui.BeginChild("##config", ImGuiWindowFlags.HorizontalScrollbar);
       foreach (var configFile in configFiles)
       {
-        ImGui.Text(configFile.ConfigFilePath);
-        foreach (var key in configFile.Keys)
+        ImGui.Text(configFile.FileName);
+        ImGui.PushID(configFile.FileName);
+        foreach (var category in configFile.Categories)
         {
-          ImGui.Text($"[{key.Section}] {key.Key}");
+          if (!ImGui.CollapsingHeader(category.Category, ImGuiTreeNodeFlags.DefaultOpen))
+            continue;
+          foreach (var entry in category.Entries)
+          {
+            DrawConfigEntry(entry);
+          }
         }
+        ImGui.PopID();
+      }
+      ImGui.EndChild();
+    }
+
+    private unsafe static void DrawConfigEntry(ConfigEntryBase entry)
+    {
+      ImGui.PushID(entry.Definition.Key);
+      ImGui.BeginGroup();
+
+      ImGui.Text(entry.Definition.Key);
+      ImGui.SameLine();
+      ImGui.SetNextItemWidth(-float.Epsilon);
+      var value = entry.BoxedValue;
+      if (value is string stringValue)
+      {
+        if (ImGui.InputText("##stringvalue", ref stringValue, 256))
+          entry.BoxedValue = stringValue;
+      }
+      else if (value is bool boolValue)
+      {
+        if (ImGui.Checkbox("##boolvalue", ref boolValue))
+          entry.BoxedValue = boolValue;
+      }
+      else if (value is int intValue)
+      {
+        if (ImGui.InputInt("##intvalue", ref intValue, step: 0))
+          entry.BoxedValue = intValue;
+      }
+      else if (value is float floatValue)
+      {
+        if (ImGui.InputFloat("##floatvalue", ref floatValue))
+          entry.BoxedValue = floatValue;
+      }
+      else if (value is double doubleValue)
+      {
+        if (ImGui.InputDouble("##doublevalue", ref doubleValue))
+          entry.BoxedValue = doubleValue;
+      }
+      else
+      {
+        ImGui.Text($"{value}");
+      }
+
+      ImGui.EndGroup();
+      ImGui.PopID();
+      if (ImGui.IsItemHovered())
+      {
+        ImGui.BeginTooltip();
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 600f);
+        ImGui.TextUnformatted(entry.Description.Description);
+        ImGui.PopTextWrapPos();
+        ImGui.EndTooltip();
       }
     }
 
