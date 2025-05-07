@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Text;
 using Assets.Scripts;
 using BepInEx.Configuration;
@@ -78,7 +77,7 @@ namespace StationeersLaunchPad
       else
         Text("");
 
-      TextColored(Vector4.one * 0.5f, "click to configure");
+      TextDisabled("click to configure");
 
       if (ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         LaunchPadConfig.AutoLoad = false;
@@ -86,8 +85,6 @@ namespace StationeersLaunchPad
       ImGui.End();
     }
 
-    private static Vector4 TextColor => _colors[(int)ImGuiCol.Text];
-    private static Vector4 TextDisabledColor => _colors[(int)ImGuiCol.TextDisabled];
     private static Vector4 LoadStateColor(LoadState expected) => LaunchPadConfig.LoadState == expected ? TextColor : TextDisabledColor;
     private static Vector4 LoadStateColor(LoadState expected1, LoadState expected2) =>
       LaunchPadConfig.LoadState == expected1 || LaunchPadConfig.LoadState == expected2 ? TextColor : TextDisabledColor;
@@ -112,10 +109,10 @@ namespace StationeersLaunchPad
       TextColored(LoadStateColor(LoadState.Initializing), "Initialize");
       ImGui.SameLine(); TextDisabled(">"); ImGui.SameLine();
       TextColored(LoadStateColor(LoadState.Configuring), "Setup Mods");
-      ImGui.SameLine(); TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+      ImGui.SameLine(); TextDisabled(">"); ImGui.SameLine();
       if (LaunchPadConfig.LoadState == LoadState.Configuring)
       {
-        if (ImGui.Button("Load Mods"))
+        if (ImGui.SmallButton("Load Mods"))
           LaunchPadConfig.LoadState = LoadState.ModsLoading;
       }
       else
@@ -123,7 +120,7 @@ namespace StationeersLaunchPad
       ImGui.SameLine(); TextDisabled(">"); ImGui.SameLine();
       if (LaunchPadConfig.LoadState == LoadState.ModsLoaded)
       {
-        if (ImGui.Button("Start Game"))
+        if (ImGui.SmallButton("Start Game"))
           LaunchPadConfig.LoadState = LoadState.GameRunning;
       }
       else
@@ -146,6 +143,7 @@ namespace StationeersLaunchPad
               ImGui.SameLine();
               if (ImGui.Checkbox("Autosort", ref LaunchPadConfig.AutoSort))
                 ConfigChanged = true;
+              ItemTooltip("Automatically sort based on LoadBefore/LoadAfter tags in mod data");
             }
 
             DrawConfigTable(edit: LaunchPadConfig.LoadState == LoadState.Configuring);
@@ -186,20 +184,15 @@ namespace StationeersLaunchPad
           ImGui.EndTabItem();
         }
 
-        if (LaunchPadConfig.LoadState <= LoadState.ModsLoading)
-        {
-          ImGui.BeginDisabled();
-          var open = ImGui.BeginTabItem("Config");
-          ImGui.EndDisabled();
-          if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip("Mods must be loaded to edit configuration");
-          if (open)
-          {
-            // this shouldn't happen, but we close out just in case
-            ImGui.EndTabItem();
-          }
-        }
-        else if (ImGui.BeginTabItem("Config"))
+        var configDisabled = LaunchPadConfig.LoadState <= LoadState.ModsLoading;
+        ImGui.BeginDisabled(configDisabled);
+        var open = ImGui.BeginTabItem("Configure mod");
+        ImGui.EndDisabled();
+        ItemTooltip(
+          configDisabled ? "Mods must be loaded to edit configuration" : "Edit mod specific configuration",
+          hoverFlags: ImGuiHoveredFlags.AllowWhenDisabled
+        );
+        if (open)
         {
           DrawConfig();
           ImGui.EndTabItem();
@@ -214,8 +207,7 @@ namespace StationeersLaunchPad
     {
       if (ImGui.Button("Export Mod Package"))
         LaunchPadConfig.ExportModPackage();
-      if (ImGui.IsItemHovered())
-        ImGui.SetTooltip("Create a zip file with all enabled mods for dedicated servers");
+      ItemTooltip("Package enabled mods into a zip file for dedicated servers");
     }
 
     private static ModInfo DraggingMod = null;
@@ -315,11 +307,11 @@ namespace StationeersLaunchPad
           if (mod.Loaded == null)
             Text("");
           else if (mod.Loaded.LoadFailed)
-            TextColored(new Vector4(1, 0, 0, 1), "X");
+            TextColored(Red, "X");
           else if (!mod.Loaded.LoadFinished)
             Text("...");
           else
-            TextColored(new Vector4(0, 1, 0, 1), "+");
+            TextColored(Green, "+");
 
           ImGui.TableNextColumn();
           var isSelected = Selected == mod;
@@ -371,7 +363,7 @@ namespace StationeersLaunchPad
 
       if (ImGui.IsWindowHovered())
       {
-        ImGui.SetTooltip("Click to copy logs");
+        TooltipText("Click to copy logs");
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
           var logText = new StringBuilder();
@@ -390,9 +382,9 @@ namespace StationeersLaunchPad
       if (line.Type == LogType.Log)
         Text(line.Text);
       else if (line.Type == LogType.Warning)
-        TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
+        TextColored(Yellow, line.Text);
       else
-        TextColored(new Vector4(1, 0, 0, 1), line.Text);
+        TextColored(Red, line.Text);
     }
 
     private static void DrawConfig()
@@ -470,14 +462,7 @@ namespace StationeersLaunchPad
 
       ImGui.EndGroup();
       ImGui.PopID();
-      if (ImGui.IsItemHovered())
-      {
-        ImGui.BeginTooltip();
-        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 600f);
-        Text(entry.Description.Description);
-        ImGui.PopTextWrapPos();
-        ImGui.EndTooltip();
-      }
+      ItemTooltip(entry.Description.Description, 600f);
     }
 
     // These are helpers to always use TextUnformatted so it doesn't interpret
@@ -496,7 +481,25 @@ namespace StationeersLaunchPad
     {
       TextColored(TextDisabledColor, text);
     }
+    private static void TooltipText(string text, float wrapWidth = float.MaxValue)
+    {
+      ImGui.BeginTooltip();
+      ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrapWidth);
+      Text(text);
+      ImGui.PopTextWrapPos();
+      ImGui.EndTooltip();
+    }
+    private static void ItemTooltip(string text, float wrapWidth = float.MaxValue, ImGuiHoveredFlags hoverFlags = ImGuiHoveredFlags.None)
+    {
+      if (ImGui.IsItemHovered(hoverFlags))
+        TooltipText(text, wrapWidth);
+    }
 
+    private static Vector4 TextColor => _colors[(int)ImGuiCol.Text];
+    private static Vector4 TextDisabledColor => _colors[(int)ImGuiCol.TextDisabled];
+    private static Vector4 Green => new Vector4(0, 1, 0, 1);
+    private static Vector4 Red = new Vector4(1, 0, 0, 1);
+    private static Vector4 Yellow = new Vector4(0.7f, 0.7f, 0, 1);
     private static Vector4[] _colors;
     private static void PushDefaultStyle()
     {
