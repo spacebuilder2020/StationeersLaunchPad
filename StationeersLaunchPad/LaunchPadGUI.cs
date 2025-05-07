@@ -40,7 +40,7 @@ namespace StationeersLaunchPad
 
       var autoTime = (int)Math.Ceiling(LaunchPadConfig.AutoWaitTime - LaunchPadConfig.AutoStopwatch.Elapsed.TotalSeconds);
 
-      ImGui.Text("LaunchPad " + (LaunchPadConfig.LoadState switch
+      Text("LaunchPad " + (LaunchPadConfig.LoadState switch
       {
         LoadState.Initializing => "Initializing",
         LoadState.Configuring => $"Loading mods in {autoTime}",
@@ -53,9 +53,9 @@ namespace StationeersLaunchPad
       if (logCount > 0)
         DrawLogLine(Logger.Global.Lines[logCount - 1]);
       else
-        ImGui.Text("");
+        Text("");
 
-      ImGui.TextColored(Vector4.one * 0.5f, "click to configure");
+      TextColored(Vector4.one * 0.5f, "click to configure");
 
       if (ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         LaunchPadConfig.AutoLoad = false;
@@ -86,25 +86,25 @@ namespace StationeersLaunchPad
 
       ImGui.BeginChild("##left");
 
-      ImGui.TextColored(LoadStateColor(LoadState.Initializing), "Initialize");
-      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
-      ImGui.TextColored(LoadStateColor(LoadState.Configuring), "Setup Mods");
-      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+      TextColored(LoadStateColor(LoadState.Initializing), "Initialize");
+      ImGui.SameLine(); TextDisabled(">"); ImGui.SameLine();
+      TextColored(LoadStateColor(LoadState.Configuring), "Setup Mods");
+      ImGui.SameLine(); TextColored(TextDisabledColor, ">"); ImGui.SameLine();
       if (LaunchPadConfig.LoadState == LoadState.Configuring)
       {
         if (ImGui.Button("Load Mods"))
           LaunchPadConfig.LoadState = LoadState.ModsLoading;
       }
       else
-        ImGui.TextColored(LoadStateColor(LoadState.ModsLoading, LoadState.ModsLoaded), "Load Mods");
-      ImGui.SameLine(); ImGui.TextColored(TextDisabledColor, ">"); ImGui.SameLine();
+        TextColored(LoadStateColor(LoadState.ModsLoading, LoadState.ModsLoaded), "Load Mods");
+      ImGui.SameLine(); TextDisabled(">"); ImGui.SameLine();
       if (LaunchPadConfig.LoadState == LoadState.ModsLoaded)
       {
         if (ImGui.Button("Start Game"))
           LaunchPadConfig.LoadState = LoadState.GameRunning;
       }
       else
-        ImGui.TextColored(TextDisabledColor, "Start Game");
+        TextDisabled("Start Game");
 
       switch (LaunchPadConfig.LoadState)
       {
@@ -115,7 +115,7 @@ namespace StationeersLaunchPad
 
             if (LaunchPadConfig.LoadState == LoadState.Initializing)
             {
-              ImGui.Text(""); ImGui.Spacing();
+              Text(""); ImGui.Spacing();
             }
             else
             {
@@ -140,7 +140,7 @@ namespace StationeersLaunchPad
           {
             if (LaunchPadConfig.LoadState == LoadState.ModsLoading)
             {
-              ImGui.Text(""); ImGui.Spacing();
+              Text(""); ImGui.Spacing();
             }
             else
             {
@@ -162,7 +162,21 @@ namespace StationeersLaunchPad
           DrawLogs();
           ImGui.EndTabItem();
         }
-        if (LaunchPadConfig.LoadState > LoadState.ModsLoading && ImGui.BeginTabItem("Config"))
+
+        if (LaunchPadConfig.LoadState <= LoadState.ModsLoading)
+        {
+          ImGui.BeginDisabled();
+          var open = ImGui.BeginTabItem("Config");
+          ImGui.EndDisabled();
+          if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetTooltip("Mods must be loaded to edit configuration");
+          if (open)
+          {
+            // this shouldn't happen, but we close out just in case
+            ImGui.EndTabItem();
+          }
+        }
+        else if (ImGui.BeginTabItem("Config"))
         {
           DrawConfig();
           ImGui.EndTabItem();
@@ -226,10 +240,10 @@ namespace StationeersLaunchPad
             }
           }
           ImGui.SameLine();
-          ImGui.Text($"{mod.Source}");
+          Text($"{mod.Source}");
 
           ImGui.TableNextColumn();
-          ImGui.Text(mod.DisplayName);
+          Text(mod.DisplayName);
 
           ImGui.PopID();
         }
@@ -276,13 +290,13 @@ namespace StationeersLaunchPad
           ImGui.TableNextColumn();
 
           if (mod.Loaded == null)
-            ImGui.Text("");
+            Text("");
           else if (mod.Loaded.LoadFailed)
-            ImGui.TextColored(new Vector4(1, 0, 0, 1), "X");
+            TextColored(new Vector4(1, 0, 0, 1), "X");
           else if (!mod.Loaded.LoadFinished)
-            ImGui.Text("...");
+            Text("...");
           else
-            ImGui.TextColored(new Vector4(0, 1, 0, 1), "+");
+            TextColored(new Vector4(0, 1, 0, 1), "+");
 
           ImGui.TableNextColumn();
           var isSelected = Selected == mod;
@@ -295,10 +309,10 @@ namespace StationeersLaunchPad
             ScrollLogsToEnd = true;
           }
           ImGui.SameLine();
-          ImGui.Text(mod.Source.ToString());
+          Text(mod.Source.ToString());
 
           ImGui.TableNextColumn();
-          ImGui.Text(mod.DisplayName);
+          Text(mod.DisplayName);
 
           ImGui.PopID();
         }
@@ -351,31 +365,32 @@ namespace StationeersLaunchPad
     private static void DrawLogLine(LogLine line)
     {
       if (line.Type == LogType.Log)
-        ImGui.Text(line.Text);
+        Text(line.Text);
       else if (line.Type == LogType.Warning)
-        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
+        TextColored(new Vector4(0.7f, 0.7f, 0, 1), line.Text);
       else
-        ImGui.TextColored(new Vector4(1, 0, 0, 1), line.Text);
+        TextColored(new Vector4(1, 0, 0, 1), line.Text);
     }
 
     private static void DrawConfig()
     {
       if (Selected == null || Selected.Source == ModSource.Core)
       {
-        ImGui.TextColored(TextDisabledColor, "Selected a mod to edit configuration");
+        TextDisabled("Selected a mod to edit configuration");
         return;
       }
       var configFiles = Selected.Loaded?.GetSortedConfigs();
       if (configFiles.Count == 0)
       {
-        ImGui.TextColored(TextDisabledColor, $"{Selected.DisplayName} does not have any configuration");
+        TextDisabled($"{Selected.DisplayName} does not have any configuration");
         return;
       }
 
       ImGui.BeginChild("##config", ImGuiWindowFlags.HorizontalScrollbar);
+      TextDisabled("These configurations may require a restart to apply");
       foreach (var configFile in configFiles)
       {
-        ImGui.Text(configFile.FileName);
+        Text(configFile.FileName);
         ImGui.PushID(configFile.FileName);
         foreach (var category in configFile.Categories)
         {
@@ -396,7 +411,7 @@ namespace StationeersLaunchPad
       ImGui.PushID(entry.Definition.Key);
       ImGui.BeginGroup();
 
-      ImGui.Text(entry.Definition.Key);
+      Text(entry.Definition.Key);
       ImGui.SameLine();
       ImGui.SetNextItemWidth(-float.Epsilon);
       var value = entry.BoxedValue;
@@ -427,7 +442,7 @@ namespace StationeersLaunchPad
       }
       else
       {
-        ImGui.Text($"{value}");
+        Text($"{value}");
       }
 
       ImGui.EndGroup();
@@ -436,10 +451,27 @@ namespace StationeersLaunchPad
       {
         ImGui.BeginTooltip();
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 600f);
-        ImGui.TextUnformatted(entry.Description.Description);
+        Text(entry.Description.Description);
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
       }
+    }
+
+    // These are helpers to always use TextUnformatted so it doesn't interpret
+    // format strings and crash the game by reading garbage on the stack
+    private static void Text(string text)
+    {
+      ImGui.TextUnformatted(text);
+    }
+    private static void TextColored(Vector4 color, string text)
+    {
+      ImGui.PushStyleColor(ImGuiCol.Text, color);
+      ImGui.TextUnformatted(text);
+      ImGui.PopStyleColor(1);
+    }
+    private static void TextDisabled(string text)
+    {
+      TextColored(TextDisabledColor, text);
     }
 
     private static Vector4[] _colors;
