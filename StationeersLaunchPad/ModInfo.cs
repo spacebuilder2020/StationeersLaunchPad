@@ -45,6 +45,16 @@ namespace StationeersLaunchPad
         return this.About.WorkshopHandle;
       }
     }
+
+    public bool SortBefore(ModInfo other)
+    {
+      if (other.About?.LoadBefore?.Find(v => v.Id == this.WorkshopHandle) != null)
+        return true;
+      var selfAfter = this.About?.LoadAfter;
+      if (this.About?.LoadAfter?.Find(v => v.Id == other.WorkshopHandle) != null)
+        return true;
+      return false;
+    }
   }
 
   public enum ModSource

@@ -260,6 +260,20 @@ namespace StationeersLaunchPad
           ImGui.TableNextColumn();
           Text(mod.DisplayName);
 
+          if (DraggingMod != null)
+          {
+            if (mod.SortBefore(DraggingMod))
+            {
+              ImGui.SameLine();
+              TextRight("Before", TextDisabledColor);
+            }
+            else if (DraggingMod.SortBefore(mod))
+            {
+              ImGui.SameLine();
+              TextRight("After", TextDisabledColor);
+            }
+          }
+
           ImGui.PopID();
         }
         ImGui.EndTable();
@@ -480,6 +494,15 @@ namespace StationeersLaunchPad
     private static void TextDisabled(string text)
     {
       TextColored(TextDisabledColor, text);
+    }
+    private static void TextRight(string text, Vector4? color = null, float padding = 2)
+    {
+      var maxCorner = ImGui.GetContentRegionMax();
+      var width = ImGui.CalcTextSize(text).x;
+      ImGui.SetCursorPosX(maxCorner.x - padding - width);
+      var minCorner = ImGui.GetCursorPos();
+      ImGui.GetWindowDrawList().AddRectFilled(minCorner, maxCorner, ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, 1)));
+      TextColored(color ?? TextColor, text);
     }
     private static void TooltipText(string text, float wrapWidth = float.MaxValue)
     {
