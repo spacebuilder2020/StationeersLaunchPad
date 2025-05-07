@@ -5,12 +5,11 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
 ## Installation
 
 ### Fresh
-- Install BepInEx 5.x into game folder
-  - find latest 5.x [BepInEx Release](https://github.com/BepInEx/BepInEx/releases), and download win_x64 zip
-  - extract into game folder (right click game in steam, `Manage->Browse local files`)
+- Install BepInEx into game folder
+  - [Download BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip) and extract into game folder (right click game in steam, `Manage->Browse local files`).
   - should end up with `BepInEx` folder and `doorstop_config.ini` file in same folder as rocketstation.exe
 - Install StationeersLaunchPad
-  - download latest client zip from [Releases](https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases)
+  - download latest zip from [Releases](https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases)
   - extract into `BepInEx/plugins` folder
 
 ### Switch from StationeersMods
@@ -28,12 +27,11 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
 
 ## Dedicated Server
 
-- Install Bepinex 5.x into dedicated server folder
-  - find latest 5.x [BepInEx Release](https://github.com/BepInEx/BepInEx/releases), and download win_x64 zip
-  - extract into game folder (right click game in steam, `Manage->Browse local files`)
+- Install Bepinex into dedicated server folder
+  - [Download BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip) and extract into dedicated server folder (`<steamcmd>/steamapps/common/Stationeers Dedicated Server`)
   - should end up with `BepInEx` folder and `doorstop_config.ini` file in same folder as `rocketstation_DedicatedServer.exe`
 - Install StationeersLaunchPad
-  - download latest client zip from [Releases](https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases)
+  - download latest server zip from [Releases](https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases)
   - extract into `BepInEx/plugins` folder
 - In the game client, click the loading window at the bottom on startup to open configuration
   - enable/disable and reorder mods to match what you want installed on the server
