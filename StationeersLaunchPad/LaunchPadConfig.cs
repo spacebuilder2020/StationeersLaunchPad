@@ -120,7 +120,7 @@ namespace StationeersLaunchPad
       {
         try
         {
-          SteamClient.Init(544550u);
+          SteamClient.Init(SteamTransport.APP_ID);
         }
         catch (Exception ex)
         {

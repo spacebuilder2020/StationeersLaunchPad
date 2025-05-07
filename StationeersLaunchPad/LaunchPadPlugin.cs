@@ -137,5 +137,13 @@ namespace StationeersLaunchPad
       var modData = ((WorkshopModListItem)workshopMenuSelectedField.GetValue(WorkshopMenu.Instance)).Data;
       LaunchPadGUI.DrawMenuConfig(modData);
     }
+
+    [HarmonyPatch(typeof(SteamClient), nameof(SteamClient.Init)), HarmonyPrefix]
+    static bool SteamClient_Init(uint appid, bool asyncCallbacks)
+    {
+      // If its already initialized, just skip instead of erroring
+      // We initialize this before the game does, but we still want the game to think it initialized itself
+      return !SteamClient.IsValid;
+    }
   }
 }
