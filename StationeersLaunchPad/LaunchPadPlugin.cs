@@ -55,7 +55,7 @@ namespace StationeersLaunchPad
     {
       if (LaunchPadGUI.IsActive)
       {
-        LaunchPadGUI.Draw();
+        LaunchPadGUI.DrawPreload();
         return false;
       }
       return true;
@@ -96,6 +96,21 @@ namespace StationeersLaunchPad
     {
       if (detail.Path == SavedPath)
         detail.ChangeNote = SavedChangeLog;
+    }
+
+    private static FieldInfo workshopMenuSelectedField;
+
+    [HarmonyPatch(typeof(OrbitalSimulation), nameof(OrbitalSimulation.Draw)), HarmonyPrefix]
+    static void WorkshopMenuDrawConfig()
+    {
+      if (!WorkshopMenu.Instance.isActiveAndEnabled)
+        return;
+
+      if (workshopMenuSelectedField == null)
+        workshopMenuSelectedField = typeof(WorkshopMenu).GetField("_selectedModItem", BindingFlags.Instance | BindingFlags.NonPublic);
+
+      var modData = ((WorkshopModListItem)workshopMenuSelectedField.GetValue(WorkshopMenu.Instance)).Data;
+      LaunchPadGUI.DrawMenuConfig(modData);
     }
   }
 }

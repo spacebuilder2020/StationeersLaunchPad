@@ -13,7 +13,7 @@ namespace StationeersLaunchPad
   {
     public static bool IsActive = true;
 
-    public static void Draw()
+    public static void DrawPreload()
     {
       if (GameManager.IsBatchMode)
         return;
@@ -23,6 +23,29 @@ namespace StationeersLaunchPad
         DrawAutoLoad();
       else
         DrawManualLoad();
+
+      PopDefaultStyle();
+    }
+
+    public static void DrawMenuConfig(ModData modData)
+    {
+      if (modData == null)
+        Selected = null;
+      else if (Selected == null || Selected.Path != modData.DirectoryPath)
+        Selected = LaunchPadConfig.Mods.Find(mod => mod.Path == modData.DirectoryPath);
+
+      var screenSize = ImguiHelper.ScreenSize;
+      var padding = new Vector2(25, 25);
+      var topLeft = new Vector2(screenSize.x - 800f - padding.x, padding.y);
+      var bottomRight = screenSize - padding;
+
+      PushDefaultStyle();
+
+      ImGui.SetNextWindowSize(bottomRight - topLeft);
+      ImGui.SetNextWindowPos(topLeft);
+      if (ImGui.Begin("Mod Configuration##menuconfig", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings))
+        DrawConfig();
+      ImGui.End();
 
       PopDefaultStyle();
     }
