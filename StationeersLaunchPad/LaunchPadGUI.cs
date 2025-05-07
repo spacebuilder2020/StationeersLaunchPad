@@ -60,7 +60,7 @@ namespace StationeersLaunchPad
       ImGui.SetNextWindowPos(topLeft);
       ImGui.Begin("##preloaderauto", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings);
 
-      var autoTime = (int)Math.Ceiling(LaunchPadConfig.AutoWaitTime - LaunchPadConfig.AutoStopwatch.Elapsed.TotalSeconds);
+      var autoTime = (int)Math.Ceiling(LaunchPadConfig.AutoLoadWaitTime.Value - LaunchPadConfig.AutoStopwatch.Elapsed.TotalSeconds);
 
       Text("LaunchPad " + (LaunchPadConfig.LoadState switch
       {
@@ -139,18 +139,16 @@ namespace StationeersLaunchPad
             }
             else
             {
-              DrawExportButton();
-              ImGui.SameLine();
-              if (ImGui.Checkbox("Autosort", ref LaunchPadConfig.AutoSort))
+              if (DrawConfigEntry(LaunchPadConfig.AutoSort))
                 ConfigChanged = true;
-              ItemTooltip("Automatically sort based on LoadBefore/LoadAfter tags in mod data");
             }
+            ImGui.Separator();
 
             DrawConfigTable(edit: LaunchPadConfig.LoadState == LoadState.Configuring);
 
             if (ConfigChanged)
             {
-              if (LaunchPadConfig.AutoSort)
+              if (LaunchPadConfig.AutoSort.Value)
                 LaunchPadConfig.SortByDeps();
               LaunchPadConfig.SaveConfig();
             }
@@ -159,15 +157,6 @@ namespace StationeersLaunchPad
         case LoadState.ModsLoading:
         case LoadState.ModsLoaded:
           {
-            if (LaunchPadConfig.LoadState == LoadState.ModsLoading)
-            {
-              Text(""); ImGui.Spacing();
-            }
-            else
-            {
-              DrawExportButton();
-            }
-
             DrawLoadTable();
             break;
           }
@@ -186,7 +175,7 @@ namespace StationeersLaunchPad
 
         var configDisabled = LaunchPadConfig.LoadState <= LoadState.ModsLoading;
         ImGui.BeginDisabled(configDisabled);
-        var open = ImGui.BeginTabItem("Configure mod");
+        var open = ImGui.BeginTabItem("Mod Configuration");
         ImGui.EndDisabled();
         ItemTooltip(
           configDisabled ? "Mods must be loaded to edit configuration" : "Edit mod specific configuration",
@@ -195,6 +184,13 @@ namespace StationeersLaunchPad
         if (open)
         {
           DrawConfig();
+          ImGui.EndTabItem();
+        }
+
+        if (ImGui.BeginTabItem("LaunchPad Configuration"))
+        {
+          DrawExportButton();
+          DrawConfigFile(LaunchPadConfig.SortedConfig);
           ImGui.EndTabItem();
         }
         ImGui.EndTabBar();
@@ -419,55 +415,85 @@ namespace StationeersLaunchPad
       TextDisabled("These configurations may require a restart to apply");
       foreach (var configFile in configFiles)
       {
-        Text(configFile.FileName);
-        ImGui.PushID(configFile.FileName);
-        foreach (var category in configFile.Categories)
-        {
-          if (!ImGui.CollapsingHeader(category.Category, ImGuiTreeNodeFlags.DefaultOpen))
-            continue;
-          foreach (var entry in category.Entries)
-          {
-            DrawConfigEntry(entry);
-          }
-        }
-        ImGui.PopID();
+        DrawConfigFile(configFile);
       }
       ImGui.EndChild();
     }
 
-    private unsafe static void DrawConfigEntry(ConfigEntryBase entry)
+    private static void DrawConfigFile(SortedConfigFile configFile)
     {
+      Text(configFile.FileName);
+      ImGui.PushID(configFile.FileName);
+      foreach (var category in configFile.Categories)
+      {
+        if (!ImGui.CollapsingHeader(category.Category, ImGuiTreeNodeFlags.DefaultOpen))
+          continue;
+        foreach (var entry in category.Entries)
+        {
+          DrawConfigEntry(entry);
+        }
+      }
+      ImGui.PopID();
+    }
+
+    private unsafe static bool DrawConfigEntry(ConfigEntryBase entry, bool fill = true)
+    {
+      var changed = false;
       ImGui.PushID(entry.Definition.Key);
       ImGui.BeginGroup();
 
       Text(entry.Definition.Key);
       ImGui.SameLine();
-      ImGui.SetNextItemWidth(-float.Epsilon);
+      if (fill)
+        ImGui.SetNextItemWidth(-float.Epsilon);
       var value = entry.BoxedValue;
       if (value is string stringValue)
       {
         if (ImGui.InputText("##stringvalue", ref stringValue, 256))
+        {
           entry.BoxedValue = stringValue;
+          changed = true;
+        }
       }
       else if (value is bool boolValue)
       {
         if (ImGui.Checkbox("##boolvalue", ref boolValue))
+        {
           entry.BoxedValue = boolValue;
+          changed = true;
+        }
       }
       else if (value is int intValue)
       {
-        if (ImGui.InputInt("##intvalue", ref intValue, step: 0))
+        if (entry.Description.AcceptableValues is AcceptableValueRange<int> valueRange)
+        {
+          if (ImGui.SliderInt("##intvalue", ref intValue, valueRange.MinValue, valueRange.MaxValue))
+          {
+            entry.BoxedValue = intValue;
+            changed = true;
+          }
+        }
+        else if (ImGui.InputInt("##intvalue", ref intValue, step: 0))
+        {
           entry.BoxedValue = intValue;
+          changed = true;
+        }
       }
       else if (value is float floatValue)
       {
         if (ImGui.InputFloat("##floatvalue", ref floatValue))
+        {
           entry.BoxedValue = floatValue;
+          changed = true;
+        }
       }
       else if (value is double doubleValue)
       {
         if (ImGui.InputDouble("##doublevalue", ref doubleValue))
+        {
           entry.BoxedValue = doubleValue;
+          changed = true;
+        }
       }
       else
       {
@@ -477,6 +503,8 @@ namespace StationeersLaunchPad
       ImGui.EndGroup();
       ImGui.PopID();
       ItemTooltip(entry.Description.Description, 600f);
+
+      return changed;
     }
 
     // These are helpers to always use TextUnformatted so it doesn't interpret

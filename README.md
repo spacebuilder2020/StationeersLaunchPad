@@ -35,5 +35,5 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
   - extract into `BepInEx/plugins` folder
 - In the game client, click the loading window at the bottom on startup to open configuration
   - enable/disable and reorder mods to match what you want installed on the server
-  - click `Export Mod Package` to create a zip file containing the enabled mods and config file
+  - on the Launchpad Configuration tab, click `Export Mod Package` to create a zip file containing the enabled mods and config file
   - extract the zip file into the dedicated server folder (should create `modconfig.xml` and `mods` folder in same folder as `rocketstation_DedicatedServer.exe`)

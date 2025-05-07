@@ -16,6 +16,7 @@ using Steamworks.Ugc;
 using System.IO.Compression;
 using System.Xml.Serialization;
 using Assets.Scripts.Util;
+using BepInEx.Configuration;
 
 namespace StationeersLaunchPad
 {
@@ -29,18 +30,22 @@ namespace StationeersLaunchPad
   }
   public static class LaunchPadConfig
   {
+    public static ConfigEntry<bool> AutoLoadOnStart;
+    public static ConfigEntry<int> AutoLoadWaitTime;
+    public static ConfigEntry<bool> AutoSort;
+    public static SortedConfigFile SortedConfig;
+
     public static SplashBehaviour SplashBehaviour;
     public static List<ModInfo> Mods = new();
     public static HashSet<string> GameAssemblies = new();
     public static LoadState LoadState = LoadState.Initializing;
     public static bool AutoLoad = true;
     public static Stopwatch AutoStopwatch = new();
-    public static bool AutoSort = true;
-
-    public const double AutoWaitTime = 3;
 
     public static async void Run()
     {
+      AutoLoad = AutoLoadOnStart.Value;
+
       await Load();
 
       while (LoadState < LoadState.Configuring)
@@ -48,7 +53,7 @@ namespace StationeersLaunchPad
 
       AutoStopwatch.Restart();
 
-      while (LoadState == LoadState.Configuring && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
+      while (LoadState == LoadState.Configuring && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoLoadWaitTime.Value))
         await UniTask.Yield();
 
       if (LoadState == LoadState.Configuring)
@@ -59,7 +64,7 @@ namespace StationeersLaunchPad
 
       AutoStopwatch.Restart();
 
-      while (LoadState == LoadState.ModsLoaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoWaitTime))
+      while (LoadState == LoadState.ModsLoaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoLoadWaitTime.Value))
         await UniTask.Yield();
 
       StartGame();
@@ -388,7 +393,7 @@ namespace StationeersLaunchPad
           Logger.Global.LogError($"- {mod.Source} {mod.DisplayName}");
         }
         AutoLoad = false;
-        AutoSort = false;
+        AutoSort.Value = false;
         return;
       }
 

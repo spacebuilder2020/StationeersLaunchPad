@@ -5,6 +5,7 @@ using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
 using Assets.Scripts.Serialization;
 using BepInEx;
+using BepInEx.Configuration;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using Steamworks;
@@ -24,6 +25,30 @@ namespace StationeersLaunchPad
     {
       if (Harmony.HasAnyPatches(pluginGuid))
         return;
+
+      LaunchPadConfig.AutoLoadOnStart = this.Config.Bind<bool>(
+        new ConfigDefinition("Startup", "AutoLoadOnStart"),
+        defaultValue: true,
+        configDescription: new ConfigDescription(
+          "Automatically load after the configured wait time on startup. Can be stopped by clicking the loading window at the bottom"
+        )
+      );
+      LaunchPadConfig.AutoLoadWaitTime = this.Config.Bind<int>(
+        new ConfigDefinition("Startup", "AutoLoadWaitTime"),
+        defaultValue: 3,
+        configDescription: new ConfigDescription(
+          "How many seconds to wait before loading mods, then loading the game",
+          new AcceptableValueRange<int>(3, 30)
+        )
+      );
+      LaunchPadConfig.AutoSort = this.Config.Bind<bool>(
+        new ConfigDefinition("Startup", "AutoSort"),
+        defaultValue: true,
+        configDescription: new ConfigDescription(
+          "Automatically sort based on LoadBefore/LoadAfter tags in mod data"
+        )
+      );
+      LaunchPadConfig.SortedConfig = new SortedConfigFile(this.Config);
 
       var harmony = new Harmony(pluginGuid);
       harmony.PatchAll();
