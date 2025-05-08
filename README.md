@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/SLP_logo.png" /></p>
+
 # StationeersLaunchPad
 
 A simple mod loader for Stationeers that allows you to edit mod configuration at game startup. This is compatible with Bepinex and StationeersMods mods installed locally in the home folder or downloaded from steam workshop.
