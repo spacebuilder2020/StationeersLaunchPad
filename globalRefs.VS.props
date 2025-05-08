@@ -40,6 +40,10 @@
       <HintPath>$(StationeersDirectory)\rocketstation_Data\Managed\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(StationeersDirectory)\rocketstation_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unitask">
       <HintPath>$(StationeersDirectory)\rocketstation_Data\Managed\Unitask.dll</HintPath>
       <Private>False</Private>

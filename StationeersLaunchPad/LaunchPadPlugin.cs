@@ -19,7 +19,7 @@ namespace StationeersLaunchPad
   {
     public const string pluginGuid = "stationeers.launchpad";
     public const string pluginName = "StationeersLaunchPad";
-    public const string pluginVersion = "0.1.0";
+    public const string pluginVersion = "0.1.1";
 
     void Awake()
     {
@@ -121,6 +121,15 @@ namespace StationeersLaunchPad
     {
       if (detail.Path == SavedPath)
         detail.ChangeNote = SavedChangeLog;
+    }
+
+    [HarmonyPatch(typeof(WorkshopMenu), "SelectMod"), HarmonyPostfix]
+    static void WorkshopMenuSelectMod(WorkshopMenu __instance, WorkshopModListItem modItem)
+    {
+      var modInfo = LaunchPadConfig.Mods.Find(mod => mod.Path == modItem?.Data?.DirectoryPath);
+      var inGameDesc = modInfo?.About?.InGameDescription?.Value;
+      if (!string.IsNullOrEmpty(inGameDesc))
+        __instance.DescriptionText.text = inGameDesc;
     }
 
     private static FieldInfo workshopMenuSelectedField;

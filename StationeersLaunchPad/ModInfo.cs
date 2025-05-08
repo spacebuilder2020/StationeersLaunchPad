@@ -76,6 +76,14 @@ namespace StationeersLaunchPad
     [XmlElement]
     public string Description;
     [XmlElement(IsNullable = true)]
+    [XmlIgnore]
+    private string _inGameDescription;
+    [XmlElement("InGameDescription", IsNullable = true)]
+    public XmlCDataSection InGameDescription
+    {
+      get => new XmlDocument().CreateCDataSection(this._inGameDescription);
+      set => this._inGameDescription = value.Value;
+    }
     public string ChangeLog;
     [XmlElement]
     public ulong WorkshopHandle;
