@@ -8,14 +8,22 @@ namespace StationeersMods.Interface
 {
   public class StationeersModsUtility
   {
-    public static Thing FindPrefab(string prefabName) => WorldManager.Instance.SourcePrefabs.Find(prefab => prefab != null & prefab.PrefabName == prefabName);
+    public static Thing FindPrefab(string prefabName) => WorldManager.Instance.SourcePrefabs.Find(prefab => prefab != null && prefab.PrefabName == prefabName);
     public static Item FindTool(StationeersTool tool) => FindPrefab(tool.PrefabName) as Item;
+    private static Material _blueprintMaterial;
     public static Material[] GetBlueprintMaterials(int size)
     {
-      var blueprintMaterial = FindPrefab("StructureFrame").Blueprint.GetComponent<MeshRenderer>().materials[0];
+      if (_blueprintMaterial == null) {
+        foreach (var prefab in WorldManager.Instance.SourcePrefabs)
+        {
+          _blueprintMaterial = prefab?.Blueprint?.GetComponent<MeshRenderer>()?.materials?[0];
+          if (_blueprintMaterial != null)
+            break;
+        }
+      }
       var materials = new Material[size];
       for (var i = 0; i < size; i++)
-        materials[i] = blueprintMaterial;
+        materials[i] = _blueprintMaterial;
       return materials;
     }
     public static Material GetMaterial(StationeersColor color, ShaderType shaderType)
