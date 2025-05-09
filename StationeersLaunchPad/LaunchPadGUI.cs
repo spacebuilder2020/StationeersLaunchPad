@@ -401,11 +401,16 @@ namespace StationeersLaunchPad
     {
       if (Selected == null || Selected.Source == ModSource.Core)
       {
-        TextDisabled("Selected a mod to edit configuration");
+        TextDisabled("Select a mod to edit configuration");
+        return;
+      }
+      if (Selected.Loaded == null)
+      {
+        TextDisabled("Mod was not enabled at load time. Restart required in order to configure");
         return;
       }
       var configFiles = Selected.Loaded?.GetSortedConfigs();
-      if (configFiles.Count == 0)
+      if (configFiles == null || configFiles.Count == 0)
       {
         TextDisabled($"{Selected.DisplayName} does not have any configuration");
         return;
