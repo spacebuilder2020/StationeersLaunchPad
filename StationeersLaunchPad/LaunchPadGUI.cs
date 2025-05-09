@@ -443,6 +443,9 @@ namespace StationeersLaunchPad
 
     private unsafe static bool DrawConfigEntry(ConfigEntryBase entry, bool fill = true)
     {
+      // TODO: support AcceptableValueRange and AcceptableValueList for all data types
+      // This unfortunately requires a separate implementation for each type
+
       var changed = false;
       ImGui.PushID(entry.Definition.Key);
       ImGui.BeginGroup();
@@ -452,7 +455,28 @@ namespace StationeersLaunchPad
       if (fill)
         ImGui.SetNextItemWidth(-float.Epsilon);
       var value = entry.BoxedValue;
-      if (value is string stringValue)
+      if (value is Enum enumValue)
+      {
+        var type = enumValue.GetType();
+        var values = Enum.GetValues(type);
+        var names = Enum.GetNames(type);
+        var index = -1;
+        for (var i = 0; i < values.Length; i++)
+        {
+          if (values.GetValue(i).Equals(enumValue))
+          {
+            index = i;
+            break;
+          }
+        }
+        if (ImGui.Combo("##enumValue", ref index, names, names.Length))
+        {
+          Logger.Global.Log($"{enumValue} {enumValue.GetType()} {values.GetValue(index)} {values.GetValue(index).GetType()}");
+          entry.BoxedValue = values.GetValue(index);
+          changed = true;
+        }
+      }
+      else if (value is string stringValue)
       {
         if (ImGui.InputText("##stringvalue", ref stringValue, 256))
         {
