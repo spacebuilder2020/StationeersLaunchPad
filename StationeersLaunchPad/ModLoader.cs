@@ -94,6 +94,20 @@ namespace StationeersLaunchPad
       return result;
     }
 
+    public static List<Type> FindAnyStationeersModsEntrypoints(List<Assembly> assemblies)
+    {
+      var result = new List<Type>();
+      foreach (var assembly in assemblies)
+      {
+        foreach (var type in assembly.GetTypes())
+        {
+          if (typeof(ModBehaviour).IsAssignableFrom(type))
+            result.Add(type);
+        }
+      }
+      return result;
+    }
+
     public static List<Type> FindExportSettingsClassEntrypoints(List<Assembly> assemblies, List<ExportSettings> exports)
     {
       var result = new List<Type>();

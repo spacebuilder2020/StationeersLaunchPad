@@ -86,6 +86,16 @@ namespace StationeersLaunchPad
           if (!this.SMEntryTypes.Contains(type))
             this.SMEntryTypes.Add(type);
         }
+        // StationeersMods would take any ModBehaviour it found as an entrypoint when there were no ExportSettings
+        // We'll do the same to ensure any mods relying on this still work
+        if (this.Exports.Count == 0)
+        {
+          foreach (var type in ModLoader.FindAnyStationeersModsEntrypoints(this.Assemblies))
+          {
+            if (!this.SMEntryTypes.Contains(type))
+              this.SMEntryTypes.Add(type);
+          }
+        }
         foreach (var type in this.SMEntryTypes)
           this.Logger.Log($"- StationeersMods {type.FullName}");
         foreach (var exportSettings in this.Exports)
