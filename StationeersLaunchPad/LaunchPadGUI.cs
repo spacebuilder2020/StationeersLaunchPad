@@ -65,6 +65,7 @@ namespace StationeersLaunchPad
       Text("LaunchPad " + (LaunchPadConfig.LoadState switch
       {
         LoadState.Initializing => "Initializing",
+        LoadState.Updating => "Updating",
         LoadState.Configuring => $"Loading mods in {autoTime}",
         LoadState.ModsLoading => "Loading mods",
         LoadState.ModsLoaded => $"Starting game in {autoTime}",
@@ -129,6 +130,7 @@ namespace StationeersLaunchPad
       switch (LaunchPadConfig.LoadState)
       {
         case LoadState.Initializing:
+        case LoadState.Updating:
         case LoadState.Configuring:
           {
             ConfigChanged = false;

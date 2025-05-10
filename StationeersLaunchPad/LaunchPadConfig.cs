@@ -23,13 +23,16 @@ namespace StationeersLaunchPad
   public enum LoadState
   {
     Initializing,
+    Updating,
     Configuring,
     ModsLoading,
     ModsLoaded,
     GameRunning
   }
+
   public static class LaunchPadConfig
   {
+    public static ConfigEntry<bool> AutoUpdateOnStart;
     public static ConfigEntry<bool> AutoLoadOnStart;
     public static ConfigEntry<int> AutoLoadWaitTime;
     public static ConfigEntry<bool> AutoSort;
@@ -39,17 +42,25 @@ namespace StationeersLaunchPad
     public static List<ModInfo> Mods = new();
     public static HashSet<string> GameAssemblies = new();
     public static LoadState LoadState = LoadState.Initializing;
+    public static bool AutoUpdate = false;
     public static bool AutoLoad = true;
+    public static bool HasUpdated = false;
     public static Stopwatch AutoStopwatch = new();
 
     public static async void Run()
     {
+      AutoUpdate = AutoUpdateOnStart.Value;
       AutoLoad = AutoLoadOnStart.Value;
-
+      
       await Load();
 
-      while (LoadState < LoadState.Configuring)
+      while (LoadState < LoadState.Updating)
         await UniTask.Yield();
+
+      if (HasUpdated && !GameManager.IsBatchMode)
+      {
+        AutoLoad = false;
+      }
 
       AutoStopwatch.Restart();
 
@@ -76,6 +87,7 @@ namespace StationeersLaunchPad
       {
         LoadState = LoadState.Initializing;
 
+        Logger.Global.Log("Initializing...");
         await UniTask.Run(() => Initialize());
 
         Logger.Global.Log("Listing Local Mods");
@@ -100,15 +112,41 @@ namespace StationeersLaunchPad
 
         Logger.Global.Log("Mod Config Initialized");
 
+        if (AutoUpdate)
+        {
+          LoadState = LoadState.Updating;
+
+          Logger.Global.Log("Checking Version");
+          try
+          {
+            await UniTask.Run(() => LaunchPadUpdater.CheckVersion());
+          }
+          catch (Exception ex)
+          {
+            Logger.Global.LogError("Error occurred during updating.");
+            Logger.Global.LogException(ex);
+            await UniTask.Run(() => LaunchPadUpdater.RevertUpdate());
+          }
+        }
+
         LoadState = LoadState.Configuring;
       }
       catch (Exception ex)
       {
-        Logger.Global.LogError("Error occurred during initialization. Mods will not be loaded");
-        Logger.Global.LogException(ex);
-        Mods = new();
-        LoadState = LoadState.ModsLoaded;
-        AutoLoad = false;
+        if (!GameManager.IsBatchMode)
+        {
+         Logger.Global.LogError("Error occurred during initialization. Mods will not be loaded.");
+         Logger.Global.LogException(ex);
+
+         Mods = new();
+         LoadState = LoadState.ModsLoaded;
+         AutoLoad = false;
+        }
+        else
+        {
+          Logger.Global.LogError("Error occurred during initialization.");
+          Logger.Global.LogException(ex);
+        }
       }
     }
 
