@@ -139,6 +139,25 @@ namespace StationeersLaunchPad
       }
       return result;
     }
+
+    public const string DEFAULT_METHOD = "OnLoaded";
+    public static List<(Type, MethodInfo)> FindDefaultEntrypoints(List<Assembly> assemblies)
+    {
+      var result = new List<(Type, MethodInfo)>();
+      foreach (var assembly in assemblies)
+      {
+        var name = assembly.GetName().Name;
+        var defType = assembly.GetType(name);
+        if (defType == null || !typeof(MonoBehaviour).IsAssignableFrom(defType))
+          continue;
+
+        var defMethod = defType.GetMethod(DEFAULT_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(List<GameObject>) }, null);
+        if (defMethod == null)
+          continue;
+        result.Add((defType, defMethod));
+      }
+      return result;
+    }
   }
 
   public abstract class LoadStrategy

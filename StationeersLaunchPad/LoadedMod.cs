@@ -28,6 +28,7 @@ namespace StationeersLaunchPad
 
     public List<Type> SMEntryTypes = new();
     public List<Type> BepinexEntryTypes = new();
+    public List<(Type, MethodInfo)> DefaultEntryTypes = new();
     public List<GameObject> EntryPrefabs = new();
 
     public List<ConfigFile> ConfigFiles = new();
@@ -110,6 +111,10 @@ namespace StationeersLaunchPad
         this.BepinexEntryTypes.AddRange(ModLoader.FindBepinexEntrypoints(this.Assemblies));
         foreach (var type in this.BepinexEntryTypes)
           this.Logger.Log($"- Bepinex {type.FullName}");
+
+        this.DefaultEntryTypes.AddRange(ModLoader.FindDefaultEntrypoints(this.Assemblies));
+        foreach (var (type, _) in this.DefaultEntryTypes)
+          this.Logger.Log($"- Default {type.FullName}");
       });
     }
 
@@ -156,6 +161,14 @@ namespace StationeersLaunchPad
             plugin.Config.SettingChanged += (_, _) => this.DirtyConfig();
             this.ConfigFiles.Add(plugin.Config);
           }
+        }
+
+        foreach (var (type, method) in this.DefaultEntryTypes)
+        {
+          var gameObj = new GameObject();
+          GameObject.DontDestroyOnLoad(gameObj);
+          var component = gameObj.AddComponent(type);
+          method.Invoke(component, new object[] { this.Prefabs });
         }
 
         this.ConfigFiles.Sort((a, b) => a.ConfigFilePath.CompareTo(b.ConfigFilePath));
