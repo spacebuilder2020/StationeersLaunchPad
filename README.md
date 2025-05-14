@@ -15,6 +15,8 @@ A simple mod loader for Stationeers that allows you to edit mod configuration at
   - extract into `BepInEx/plugins` folder
 
 ### Switch from StationeersMods
+__StationeersLaunchPad and StationeersMods can't be installed together__. Both mod loaders serve the same purpose and having both installed can cause issues. StationeersLaunchPad was created to replace and upgrade StationeersMods.
+
 - Remove `StationeersMods` folder from `Bepinex/plugins` in game folder
   - to open game folder: right click game in steam, `Manage->Browse local files`
 - Install StationeersLaunchPad
