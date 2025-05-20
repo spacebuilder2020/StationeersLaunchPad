@@ -1,22 +1,23 @@
-
+using Assets.Scripts;
+using Assets.Scripts.Networking.Transports;
+using Assets.Scripts.Serialization;
+using Assets.Scripts.Util;
+using BepInEx;
+using BepInEx.Configuration;
+using Cysharp.Threading.Tasks;
+using Mono.Cecil;
+using Steamworks;
+using Steamworks.Ugc;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
-using Cysharp.Threading.Tasks;
-using Assets.Scripts;
-using Assets.Scripts.Networking.Transports;
-using Assets.Scripts.Serialization;
-using Mono.Cecil;
-using Steamworks;
-using Steamworks.Ugc;
-using System.IO.Compression;
 using System.Xml.Serialization;
-using Assets.Scripts.Util;
-using BepInEx.Configuration;
+using UnityEngine;
 
 namespace StationeersLaunchPad
 {
@@ -60,6 +61,33 @@ namespace StationeersLaunchPad
       if (HasUpdated && !GameManager.IsBatchMode)
       {
         AutoLoad = false;
+
+        await LaunchPadAlertGUI.Show("Restart Recommended", "StationeersLaunchPad has been updated, it is recommended to restart the game.", 
+          LaunchPadAlertGUI.DefaultSize,
+          LaunchPadAlertGUI.DefaultPosition,
+         ("Continue Loading", () => {
+            AutoLoad = true;
+
+            return true;
+          }),
+          ("Restart Game", () => {
+            var startInfo = new ProcessStartInfo();
+            startInfo.FileName = Paths.ExecutablePath;
+            startInfo.WorkingDirectory = Paths.GameRootPath;
+            startInfo.UseShellExecute = false;
+
+            // remove environment variables that new process will inherit
+            startInfo.Environment.Remove("DOORSTOP_INITIALIZED");
+            startInfo.Environment.Remove("DOORSTOP_DISABLE");
+
+            Process.Start(startInfo);
+
+            Application.Quit();
+
+            return false;
+          }),
+          ("Close", () => true)
+        );
       }
 
       AutoStopwatch.Restart();
@@ -112,21 +140,19 @@ namespace StationeersLaunchPad
 
         Logger.Global.Log("Mod Config Initialized");
 
-        if (AutoUpdate)
-        {
-          LoadState = LoadState.Updating;
+       
+        LoadState = LoadState.Updating;
 
-          Logger.Global.Log("Checking Version");
-          try
-          {
-            await UniTask.Run(() => LaunchPadUpdater.CheckVersion());
-          }
-          catch (Exception ex)
-          {
-            Logger.Global.LogError("Error occurred during updating.");
-            Logger.Global.LogException(ex);
-            await UniTask.Run(() => LaunchPadUpdater.RevertUpdate());
-          }
+        Logger.Global.Log("Checking Version");
+        try
+        {
+          await UniTask.Run(() => LaunchPadUpdater.CheckVersion());
+        }
+        catch (Exception ex)
+        {
+          Logger.Global.LogError("Error occurred during updating.");
+          Logger.Global.LogException(ex);
+          await UniTask.Run(() => LaunchPadUpdater.RevertUpdate());
         }
 
         LoadState = LoadState.Configuring;
