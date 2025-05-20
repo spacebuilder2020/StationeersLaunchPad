@@ -97,86 +97,87 @@ namespace StationeersLaunchPad
               this.SMEntryTypes.Add(type);
           }
         }
-        foreach (var type in this.SMEntryTypes)
-          this.Logger.Log($"- StationeersMods {type.FullName}");
         foreach (var exportSettings in this.Exports)
         {
           var prefab = exportSettings._startupPrefab;
           if (prefab != null)
-          {
             this.EntryPrefabs.Add(prefab);
-            this.Logger.Log($"- prefab {prefab.name}");
-          }
         }
         this.BepinexEntryTypes.AddRange(ModLoader.FindBepinexEntrypoints(this.Assemblies));
-        foreach (var type in this.BepinexEntryTypes)
-          this.Logger.Log($"- Bepinex {type.FullName}");
 
         this.DefaultEntryTypes.AddRange(ModLoader.FindDefaultEntrypoints(this.Assemblies));
-        foreach (var (type, _) in this.DefaultEntryTypes)
-          this.Logger.Log($"- Default {type.FullName}");
       });
     }
 
-    public UniTask LoadEntrypoints()
+    public void PrintEntrypoints()
     {
-      return UniTask.RunOnThreadPool(() =>
+      // getting prefab names fails on a thread in the debug player, so just print all the entrypoints after we finish
+      foreach (var type in this.SMEntryTypes)
+        this.Logger.Log($"- StationeersMods {type.FullName}");
+      foreach (var prefab in this.EntryPrefabs)
+        this.Logger.Log($"- prefab {prefab.name}");
+      foreach (var type in this.BepinexEntryTypes)
+        this.Logger.Log($"- Bepinex {type.FullName}");
+      foreach (var (type, _) in this.DefaultEntryTypes)
+        this.Logger.Log($"- Default {type.FullName}");
+    }
+
+    public void LoadEntrypoints()
+    {
+      this.Logger.Log("Loading Entrypoints");
+
+      // StationeersMods tagged ModBehaviour/StartupClass/StartupPrefab
+      var modBehaviours = new List<ModBehaviour>();
+      if (this.SMEntryTypes.Count > 0)
       {
-        this.Logger.Log("Loading Entrypoints");
-
-        // StationeersMods tagged ModBehaviour/StartupClass/StartupPrefab
-        var modBehaviours = new List<ModBehaviour>();
-        if (this.SMEntryTypes.Count > 0)
+        var gameObj = new GameObject();
+        GameObject.DontDestroyOnLoad(gameObj);
+        foreach (var type in this.SMEntryTypes)
+          gameObj.AddComponent(type);
+        modBehaviours.AddRange(gameObj.GetComponents<ModBehaviour>());
+      }
+      foreach (var prefab in this.EntryPrefabs)
+      {
+        var gameObj = GameObject.Instantiate(prefab);
+        GameObject.DontDestroyOnLoad(gameObj);
+        modBehaviours.AddRange(gameObj.GetComponents<ModBehaviour>());
+      }
+      foreach (var modBehaviour in modBehaviours)
+      {
+        modBehaviour.contentHandler = this.ContentHandler;
+        modBehaviour.OnLoaded(this.ContentHandler);
+        if (modBehaviour.Config != null)
         {
-          var gameObj = new GameObject();
-          GameObject.DontDestroyOnLoad(gameObj);
-          foreach (var type in this.SMEntryTypes)
-            gameObj.AddComponent(type);
-          modBehaviours.AddRange(gameObj.GetComponents<ModBehaviour>());
+          modBehaviour.Config.SettingChanged += (_, _) => this.DirtyConfig();
+          this.ConfigFiles.Add(modBehaviour.Config);
         }
-        foreach (var prefab in this.EntryPrefabs)
+      }
+
+      foreach (var type in this.BepinexEntryTypes)
+      {
+        var gameObj = new GameObject();
+        GameObject.DontDestroyOnLoad(gameObj);
+        var component = gameObj.AddComponent(type);
+        if (component is BaseUnityPlugin plugin && plugin.Config != null)
         {
-          var gameObj = GameObject.Instantiate(prefab);
-          GameObject.DontDestroyOnLoad(gameObj);
-          modBehaviours.AddRange(gameObj.GetComponents<ModBehaviour>());
+          plugin.Config.SettingChanged += (_, _) => this.DirtyConfig();
+          this.ConfigFiles.Add(plugin.Config);
         }
-        foreach (var modBehaviour in modBehaviours)
-        {
-          modBehaviour.contentHandler = this.ContentHandler;
-          modBehaviour.OnLoaded(this.ContentHandler);
-          if (modBehaviour.Config != null)
-          {
-            modBehaviour.Config.SettingChanged += (_, _) => this.DirtyConfig();
-            this.ConfigFiles.Add(modBehaviour.Config);
-          }
-        }
+      }
 
-        foreach (var type in this.BepinexEntryTypes)
-        {
-          var gameObj = new GameObject();
-          GameObject.DontDestroyOnLoad(gameObj);
-          var component = gameObj.AddComponent(type);
-          if (component is BaseUnityPlugin plugin && plugin.Config != null)
-          {
-            plugin.Config.SettingChanged += (_, _) => this.DirtyConfig();
-            this.ConfigFiles.Add(plugin.Config);
-          }
-        }
+      foreach (var (type, method) in this.DefaultEntryTypes)
+      {
+        var gameObj = new GameObject();
+        GameObject.DontDestroyOnLoad(gameObj);
+        var component = gameObj.AddComponent(type);
+        method.Invoke(component, new object[] { this.Prefabs });
+      }
 
-        foreach (var (type, method) in this.DefaultEntryTypes)
-        {
-          var gameObj = new GameObject();
-          GameObject.DontDestroyOnLoad(gameObj);
-          var component = gameObj.AddComponent(type);
-          method.Invoke(component, new object[] { this.Prefabs });
-        }
+      this.ConfigFiles.Sort((a, b) => a.ConfigFilePath.CompareTo(b.ConfigFilePath));
 
-        this.ConfigFiles.Sort((a, b) => a.ConfigFilePath.CompareTo(b.ConfigFilePath));
+      this.Logger.Log("Done");
 
-        this.Logger.Log("Done");
-
-        this.LoadFinished = true;
-      });
+      this.LoadFinished = true;
     }
 
     private async UniTask<Assembly> LoadAssembly(AssemblyInfo assemblyInfo)

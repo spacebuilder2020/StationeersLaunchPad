@@ -221,7 +221,8 @@ namespace StationeersLaunchPad
         {
           await mod.LoadAssetsSerial();
           await mod.FindEntrypoints();
-          await mod.LoadEntrypoints();
+          mod.PrintEntrypoints();
+          mod.LoadEntrypoints();
         }
         catch (Exception ex)
         {

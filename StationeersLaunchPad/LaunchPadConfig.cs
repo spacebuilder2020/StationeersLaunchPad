@@ -146,7 +146,7 @@ namespace StationeersLaunchPad
         Logger.Global.Log("Checking Version");
         try
         {
-          await UniTask.Run(() => LaunchPadUpdater.CheckVersion());
+          await LaunchPadUpdater.CheckVersion();
         }
         catch (Exception ex)
         {
