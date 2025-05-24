@@ -35,6 +35,11 @@ namespace StationeersLaunchPad
       this.Log(message, LogType.Log, true);
     }
 
+    public void LogDebug(string message) {
+      if (LaunchPadConfig.Debug)
+        this.Log(message, LogType.Log, true);
+    }
+
     public void LogWarning(string message)
     {
       this.Log(message, LogType.Warning, true);
