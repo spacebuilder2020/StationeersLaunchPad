@@ -27,141 +27,178 @@ namespace StationeersLaunchPad {
     private static Regex downloadRegexServer = new(@"""browser_download_url""\:\s""([^""]*StationeersLaunchPad-server-v.+\.zip)""", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static async UniTask CheckVersion() {
-      using (var request = UnityWebRequest.Get("https://api.github.com/repos/StationeersLaunchPad/StationeersLaunchPad/releases/latest")) {
-        request.timeout = 10; // 10 seconds because we are only fetching a json file
+      try
+      {
+        using (var request =
+               UnityWebRequest.Get(
+                 "https://api.github.com/repos/StationeersLaunchPad/StationeersLaunchPad/releases/latest"))
+        {
+          request.timeout = 10; // 10 seconds because we are only fetching a json file
 
-        Logger.Global.LogDebug($"Requesting version...");
-        UnityWebRequest result = await request.SendWebRequest();
+          Logger.Global.LogDebug($"Requesting version...");
+          UnityWebRequest result = await request.SendWebRequest();
 
-        if (result.result != UnityWebRequest.Result.Success) {
-          Logger.Global.LogError($"Failed to send web request! result: {result.result}, error: {result.error}");
-          return;
-        }
-
-        var text = result.downloadHandler.text;
-        var matches = versionRegex.Matches(text);
-        if (matches.Count == 0) {
-          Logger.Global.LogError($"Failed to find version regex matches.");
-          return;
-        }
-
-        var latestVersion = new Version(matches[0].Groups[1].Value.TrimStart('V', 'v'));
-        var currentVersion = new Version(LaunchPadPlugin.pluginVersion.TrimStart('V', 'v'));
-
-        if (latestVersion <= currentVersion) {
-          Logger.Global.Log($"Plugin is up-to-date.");
-          return;
-        }
-
-        Logger.Global.LogWarning($"Plugin is NOT up-to-date.");
-
-        if (!LaunchPadConfig.AutoUpdate) {
-          await LaunchPadAlertGUI.Show("Update Available", "An update is available, would you like to automatically download and update?",
-            LaunchPadAlertGUI.DefaultSize,
-            LaunchPadAlertGUI.DefaultPosition,
-            ("Yes", () => {
-              AllowUpdate = true;
-              return true;
-            }),
-            ("Open GitHub", () => {
-              AllowUpdate = false;
-              Application.OpenURL("https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases/tag/latest");
-              return true;
-            }),
-            ("No", () => {
-              AllowUpdate = false;
-              return true;
-            })
-          );
-
-          if (!AllowUpdate)
-            return;
-        }
-
-        var downloadMatches = GameManager.IsBatchMode ? downloadRegexServer.Matches(text) : downloadRegexClient.Matches(text);
-        if (downloadMatches.Count == 0) {
-          Logger.Global.LogError($"Failed to find download regex matches.");
-          return;
-        }
-
-        using (var downloadRequest = UnityWebRequest.Get(downloadMatches[0].Groups[1].Value)) {
-          downloadRequest.timeout = 45; // max of 45 seconds to download the zip file
-
-          Logger.Global.LogDebug($"Requesting download file...");
-          UnityWebRequest downloadResult = await downloadRequest.SendWebRequest();
-
-          if (downloadResult.result != UnityWebRequest.Result.Success) {
-            Logger.Global.LogError($"Failed to send web request to download! result: {result.result}, error: {result.error}");
+          if (result.result != UnityWebRequest.Result.Success)
+          {
+            Logger.Global.LogError($"Failed to send web request! result: {result.result}, error: {result.error}");
             return;
           }
 
-          var tempPath = Path.GetTempPath();
-          var extractionPath = Path.Combine(tempPath, "StationeersLaunchPad");
-          if (Directory.Exists(extractionPath)) {
-            foreach (var file in Directory.GetFiles(extractionPath)) {
-              var path = Path.Combine(extractionPath, file);
+          var text = result.downloadHandler.text;
+          var matches = versionRegex.Matches(text);
+          if (matches.Count == 0)
+          {
+            Logger.Global.LogError($"Failed to find version regex matches.");
+            return;
+          }
 
-              if (File.Exists(path)) {
-                File.Delete(path);
+          var latestVersion = new Version(matches[0].Groups[1].Value.TrimStart('V', 'v'));
+          var currentVersion = new Version(LaunchPadPlugin.pluginVersion.TrimStart('V', 'v'));
+
+          if (latestVersion <= currentVersion)
+          {
+            Logger.Global.Log($"Plugin is up-to-date.");
+            return;
+          }
+
+          Logger.Global.LogWarning($"Plugin is NOT up-to-date.");
+
+          if (!LaunchPadConfig.AutoUpdate)
+          {
+            await LaunchPadAlertGUI.Show("Update Available",
+              "An update is available, would you like to automatically download and update?",
+              LaunchPadAlertGUI.DefaultSize,
+              LaunchPadAlertGUI.DefaultPosition,
+              ("Yes", () =>
+              {
+                AllowUpdate = true;
+                return true;
+              }),
+              ("Open GitHub", () =>
+              {
+                AllowUpdate = false;
+                Application.OpenURL("https://github.com/StationeersLaunchPad/StationeersLaunchPad/releases/tag/latest");
+                return true;
+              }),
+              ("No", () =>
+              {
+                AllowUpdate = false;
+                return true;
+              })
+            );
+
+            if (!AllowUpdate)
+              return;
+          }
+
+          var downloadMatches = GameManager.IsBatchMode
+            ? downloadRegexServer.Matches(text)
+            : downloadRegexClient.Matches(text);
+          if (downloadMatches.Count == 0)
+          {
+            Logger.Global.LogError($"Failed to find download regex matches.");
+            return;
+          }
+
+          using (var downloadRequest = UnityWebRequest.Get(downloadMatches[0].Groups[1].Value))
+          {
+            downloadRequest.timeout = 45; // max of 45 seconds to download the zip file
+
+            Logger.Global.LogDebug($"Requesting download file...");
+            UnityWebRequest downloadResult = await downloadRequest.SendWebRequest();
+
+            if (downloadResult.result != UnityWebRequest.Result.Success)
+            {
+              Logger.Global.LogError(
+                $"Failed to send web request to download! result: {result.result}, error: {result.error}");
+              return;
+            }
+
+            var tempPath = Path.GetTempPath();
+            var extractionPath = Path.Combine(tempPath, "StationeersLaunchPad");
+            if (Directory.Exists(extractionPath))
+            {
+              foreach (var file in Directory.GetFiles(extractionPath))
+              {
+                var path = Path.Combine(extractionPath, file);
+
+                if (File.Exists(path))
+                {
+                  File.Delete(path);
+                }
               }
-            }
-            Directory.Delete(extractionPath);
-          }
 
-          var zipFilePath = Path.Combine(tempPath, "SLP.zip");
-          if (File.Exists(zipFilePath)) {
+              Directory.Delete(extractionPath);
+            }
+
+            var zipFilePath = Path.Combine(tempPath, "SLP.zip");
+            if (File.Exists(zipFilePath))
+            {
+              File.Delete(zipFilePath);
+            }
+
+            Logger.Global.LogDebug($"Writing file to {zipFilePath}...");
+            File.WriteAllBytes(zipFilePath, downloadResult.downloadHandler.data);
+
+            using (var zipFile = ZipFile.Open(zipFilePath, ZipArchiveMode.Read))
+            {
+              Logger.Global.LogDebug($"Extracting file contents to {extractionPath}...");
+              zipFile.ExtractToDirectory(tempPath);
+            }
+
             File.Delete(zipFilePath);
-          }
 
-          Logger.Global.LogDebug($"Writing file to {zipFilePath}...");
-          File.WriteAllBytes(zipFilePath, downloadResult.downloadHandler.data);
-
-          using (var zipFile = ZipFile.Open(zipFilePath, ZipArchiveMode.Read)) {
-            Logger.Global.LogDebug($"Extracting file contents to {extractionPath}...");
-            zipFile.ExtractToDirectory(tempPath);
-          }
-          File.Delete(zipFilePath);
-
-          Logger.Global.LogDebug($"Extracted file contents to {extractionPath}!");
-          if (!Directory.Exists(extractionPath)) {
-            Logger.Global.LogError($"Failed to exteract zip file");
-            return;
-          }
-
-          var pluginPath = Path.Combine(Paths.PluginPath, "StationeersLaunchPad");
-          foreach (var file in LaunchPadUpdater.Assemblies) {
-            var fileName = $"{file}.dll";
-            var backupFileName = $"{file}.dll.bak";
-            var newPath = Path.Combine(extractionPath, fileName);
-            if (!File.Exists(newPath)) {
-              continue;
+            Logger.Global.LogDebug($"Extracted file contents to {extractionPath}!");
+            if (!Directory.Exists(extractionPath))
+            {
+              Logger.Global.LogError($"Failed to exteract zip file");
+              return;
             }
 
-            var path = Path.Combine(pluginPath, fileName);
-            if (!File.Exists(path)) {
-              continue;
+            var pluginPath = Path.Combine(Paths.PluginPath, "StationeersLaunchPad");
+            foreach (var file in LaunchPadUpdater.Assemblies)
+            {
+              var fileName = $"{file}.dll";
+              var backupFileName = $"{file}.dll.bak";
+              var newPath = Path.Combine(extractionPath, fileName);
+              if (!File.Exists(newPath))
+              {
+                continue;
+              }
+
+              var path = Path.Combine(pluginPath, fileName);
+              if (!File.Exists(path))
+              {
+                continue;
+              }
+
+              var backupPath = Path.Combine(pluginPath, backupFileName);
+              if (File.Exists(backupPath))
+              {
+                File.Delete(backupPath);
+              }
+
+              Logger.Global.LogDebug($"Backing up DLL to {backupPath}!");
+              File.Move(path, backupPath);
+              Logger.Global.LogDebug($"Deleting DLL at {path}!");
+              File.Delete(path);
+
+              Logger.Global.LogDebug($"Moving new DLL to {newPath}!");
+              File.Move(newPath, path);
+              //File.Delete(newPath);
             }
 
-            var backupPath = Path.Combine(pluginPath, backupFileName);
-            if (File.Exists(backupPath)) {
-              File.Delete(backupPath);
-            }
+            Directory.Delete(extractionPath);
 
-            Logger.Global.LogDebug($"Backing up DLL to {backupPath}!");
-            File.Move(path, backupPath);
-            Logger.Global.LogDebug($"Deleting DLL at {path}!");
-            File.Delete(path);
-
-            Logger.Global.LogDebug($"Moving new DLL to {newPath}!");
-            File.Move(newPath, path);
-            //File.Delete(newPath);
+            LaunchPadConfig.HasUpdated = true;
+            Logger.Global.LogError(
+              $"Mod loader has been updated to version {latestVersion}, please restart your game!");
           }
-          Directory.Delete(extractionPath);
-
-          LaunchPadConfig.HasUpdated = true;
-          Logger.Global.LogError($"Mod loader has been updated to version {latestVersion}, please restart your game!");
         }
       }
+      catch (Exception ex) {
+        Logger.Global.LogError($"An error occurred during version check or update: {ex}");
+      }      
     }
 
     public static async UniTask RevertUpdate() {
