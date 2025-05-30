@@ -21,7 +21,7 @@ namespace StationeersLaunchPad
   {
     public const string pluginGuid = "stationeers.launchpad";
     public const string pluginName = "StationeersLaunchPad";
-    public const string pluginVersion = "0.1.12";
+    public const string pluginVersion = "0.1.13";
 
     void Awake()
     {
