@@ -6,8 +6,6 @@ using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using Cysharp.Threading.Tasks;
-using Cysharp.Threading.Tasks.CompilerServices;
-using HarmonyLib;
 using StationeersMods.Interface;
 using StationeersMods.Shared;
 using UnityEngine;
@@ -43,7 +41,7 @@ namespace StationeersLaunchPad
 
     public LoadedMod(ModInfo info)
     {
-      this.Logger = Logger.Global.WithPrefix($"[{info.DisplayName}]: ");
+      this.Logger = Logger.Global.CreateChild(info.DisplayName);
       this.Info = info;
       var resource = new DummyResource(info.Path);
       this.ContentHandler = new(resource, new List<IResource>().AsReadOnly(), this.Prefabs.AsReadOnly());
@@ -54,7 +52,7 @@ namespace StationeersLaunchPad
       this.Logger.LogDebug($"Loading Assembly {assemblyInfo.Name}");
       var assembly = await ModLoader.LoadAssembly(assemblyInfo.Path);
       ModLoader.RegisterAssembly(assembly, this);
-      this.Logger.LogDebug($"Loaded Assembly");
+      this.Logger.LogInfo($"Loaded Assembly");
       return assembly;
     }
 
@@ -135,7 +133,7 @@ namespace StationeersLaunchPad
         this.BepInExEntryTypes.AddRange(ModLoader.FindBepInExEntrypoints(this.Assemblies));
         this.DefaultEntryTypes.AddRange(ModLoader.FindDefaultEntrypoints(this.Assemblies));
 
-        this.Logger.LogDebug("Found Entrypoints");
+        this.Logger.LogInfo("Found Entrypoints");
       });
     }
 
@@ -208,7 +206,7 @@ namespace StationeersLaunchPad
 
       this.ConfigFiles.Sort((a, b) => a.ConfigFilePath.CompareTo(b.ConfigFilePath));
 
-      this.Logger.LogDebug("Loaded Entrypoints");
+      this.Logger.LogInfo("Loaded Entrypoints");
       this.LoadFinished = true;
     }
 
@@ -225,9 +223,8 @@ namespace StationeersLaunchPad
       this.Logger.LogDebug($"Loading AssetBundle {name} Prefabs");
       var assets = await ModLoader.LoadAllBundleAssets(bundle);
 
-     if (LaunchPadConfig.Debug)
-        foreach (var asset in assets)
-          this.Logger.LogDebug($"- Asset {asset.name}");
+      foreach (var asset in assets)
+        this.Logger.LogDebug($"- Asset {asset.name}");
 
       return assets;
     }
