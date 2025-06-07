@@ -8,6 +8,7 @@ using BepInEx;
 using StationeersMods.Interface;
 using StationeersMods.Shared;
 using UnityEngine;
+using System.Diagnostics.Contracts;
 
 namespace StationeersLaunchPad
 {
@@ -146,15 +147,32 @@ namespace StationeersLaunchPad
       var result = new List<(Type, MethodInfo)>();
       foreach (var assembly in assemblies)
       {
-        var name = assembly.GetName().Name;
-        var defType = assembly.GetType(name);
-        if (defType == null || !typeof(MonoBehaviour).IsAssignableFrom(defType))
-          continue;
+        var failed = true;
 
-        var defMethod = defType.GetMethod(DEFAULT_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(List<GameObject>) }, null);
-        if (defMethod == null || result.Contains((defType, defMethod)))
-          continue;
-        result.Add((defType, defMethod));
+        var name = assembly.GetName().Name;
+        var type = assembly.GetType(name);
+        if (type == null || type.IsAbstract || !typeof(MonoBehaviour).IsAssignableFrom(type))
+          failed = true;
+
+        var method = type?.GetMethod(DEFAULT_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(List<GameObject>) }, null);
+        if (method == null || result.Contains((type, method)))
+          failed = true;
+        else if (!failed)
+          result.Add((type, method));
+
+        if (failed)
+        {
+          foreach (var defType in assembly.GetTypes())
+          {
+            if (defType == null || defType.IsAbstract || !typeof(MonoBehaviour).IsAssignableFrom(defType))
+              continue;
+
+            var defMethod = defType.GetMethod(DEFAULT_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(List<GameObject>) }, null);
+            if (defMethod == null || result.Contains((defType, defMethod)))
+              continue;
+            result.Add((defType, defMethod));
+          }
+        }
       }
       return result;
     }
