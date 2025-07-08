@@ -43,6 +43,7 @@ namespace StationeersLaunchPad
     public static ConfigEntry<LoadStrategyMode> StrategyMode;
     public static ConfigEntry<bool> DisableSteam;
     public static ConfigEntry<bool> PostUpdateCleanup;
+    public static ConfigEntry<string> SavePathOverride;
     public static SortedConfigFile SortedConfig;
 
     public static SplashBehaviour SplashBehaviour;
