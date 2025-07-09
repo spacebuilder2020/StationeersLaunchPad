@@ -308,7 +308,6 @@ namespace StationeersLaunchPad
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games") : 
             StationSaveUtils.ExeDirectory.FullName,
           LaunchPadConfig.SavePath);
-      ConsoleWindow.PrintError(__result);
       return false;
   }
     
