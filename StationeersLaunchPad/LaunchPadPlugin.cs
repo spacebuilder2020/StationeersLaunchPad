@@ -109,9 +109,6 @@ namespace StationeersLaunchPad
         new ConfigDefinition("Mod Loading", "SavePathOverride"), null, 
         new ConfigDescription("This setting allows you to override the default path that config and save files are stored. Notice, due to how this path is implemented in the base game, this setting can only be applied on server start.  Changing it while in game will not have an effect until after a restart.")
         );
-      
-			//Cache launch path right away
-      LaunchPadPatches.SavePathOverride = LaunchPadConfig.SavePathOverride.Value;
 
       var sortedConfig = new SortedConfigFile(this.Config);
       sortedConfig.Categories.Remove(sortedConfig.Categories.Find(cat => cat.Category == "Internal"));
@@ -297,21 +294,21 @@ namespace StationeersLaunchPad
       return false;
     }
 
-    public static string SavePathOverride;
     [HarmonyPatch(typeof(StationSaveUtils), nameof(StationSaveUtils.DefaultPath), MethodType.Getter), HarmonyPrefix]
     static bool StationSaveUtils_DefaultPath(ref string __result)
     {      
-      if (SavePathOverride == null)
+      if (LaunchPadConfig.SavePath == null)
       {
         return true;
       }
 
-      __result = Path.IsPathRooted(SavePathOverride)
-        ? SavePathOverride
+      __result = Path.IsPathRooted(LaunchPadConfig.SavePath)
+        ? LaunchPadConfig.SavePath
         : Path.Combine(!GameManager.IsBatchMode ? 
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games") : 
             StationSaveUtils.ExeDirectory.FullName,
-          SavePathOverride);
+          LaunchPadConfig.SavePath);
+      ConsoleWindow.PrintError(__result);
       return false;
   }
     

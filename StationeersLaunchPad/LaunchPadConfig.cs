@@ -61,7 +61,7 @@ namespace StationeersLaunchPad
     public static bool AutoLoad = true;
     public static bool HasUpdated = false;
     public static bool SteamDisabled = false;
-
+    public static string SavePath;
     public static Stopwatch AutoStopwatch = new();
     public static Stopwatch ElapsedStopwatch = new();
 
@@ -74,6 +74,7 @@ namespace StationeersLaunchPad
       AutoLoad = AutoLoadOnStart.Value;
       LoadStrategyType = StrategyType.Value;
       LoadStrategyMode = StrategyMode.Value;
+      SavePath = SavePathOverride.Value;
 
       // we need to wait a frame so all the RuntimeInitializeOnLoad tasks are complete, otherwise GameManager.IsBatchMode won't be set yet
       await UniTask.Yield();
