@@ -294,18 +294,25 @@ namespace StationeersLaunchPad
       return false;
     }
 
+    private static string _savePathOverride;
     [HarmonyPatch(typeof(StationSaveUtils), nameof(StationSaveUtils.DefaultPath), MethodType.Getter), HarmonyPrefix]
     static bool StationSaveUtils_DefaultPath(ref string __result)
     {
-      if (LaunchPadConfig.SavePathOverride.Value == null)
+      _savePathOverride ??= LaunchPadConfig.SavePathOverride.Value != null
+        ? LaunchPadConfig.SavePathOverride.Value
+        : string.Empty;
+      
+      if (_savePathOverride == "")
       {
         return true;
       }
 
-      __result = Path.IsPathRooted(LaunchPadConfig.SavePathOverride.Value)
-        ? LaunchPadConfig.SavePathOverride.Value
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games",
-          LaunchPadConfig.SavePathOverride.Value);
+      __result = Path.IsPathRooted(_savePathOverride)
+        ? _savePathOverride
+        : Path.Combine(!GameManager.IsBatchMode ? 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games") : 
+            StationSaveUtils.ExeDirectory.FullName,
+          _savePathOverride);
       return false;
   }
     
