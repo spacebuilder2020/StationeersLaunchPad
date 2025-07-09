@@ -107,7 +107,7 @@ namespace StationeersLaunchPad
       
       LaunchPadConfig.SavePathOverride = this.Config.Bind<string>(
         new ConfigDefinition("Mod Loading", "SavePathOverride"), null, 
-        new ConfigDescription("This setting allows you to override the default path that config and save files are stored.")
+        new ConfigDescription("This setting allows you to override the default path that config and save files are stored. Notice, due to how this path is implemented in the base game, this setting can only be applied on server start.  Changing it while in game will not have an effect until after a restart.")
         );
       
       var sortedConfig = new SortedConfigFile(this.Config);
