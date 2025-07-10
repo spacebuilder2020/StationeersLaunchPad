@@ -10,6 +10,7 @@ using HarmonyLib;
 using Steamworks;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -103,6 +104,12 @@ namespace StationeersLaunchPad
           "This setting is automatically managed and should probably not be manually changed. Remove update backup files on start."
         )
       );
+      
+      LaunchPadConfig.SavePathOverride = this.Config.Bind<string>(
+        new ConfigDefinition("Mod Loading", "SavePathOverride"), null, 
+        new ConfigDescription("This setting allows you to override the default path that config and save files are stored. Notice, due to how this path is implemented in the base game, this setting can only be applied on server start.  Changing it while in game will not have an effect until after a restart.")
+        );
+
       var sortedConfig = new SortedConfigFile(this.Config);
       sortedConfig.Categories.Remove(sortedConfig.Categories.Find(cat => cat.Category == "Internal"));
       LaunchPadConfig.SortedConfig = sortedConfig;
@@ -286,5 +293,23 @@ namespace StationeersLaunchPad
 
       return false;
     }
+
+    [HarmonyPatch(typeof(StationSaveUtils), nameof(StationSaveUtils.DefaultPath), MethodType.Getter), HarmonyPrefix]
+    static bool StationSaveUtils_DefaultPath(ref string __result)
+    {      
+      if (string.IsNullOrEmpty(LaunchPadConfig.SavePath))
+      {
+        return true;
+      }
+
+      __result = Path.IsPathRooted(LaunchPadConfig.SavePath)
+        ? LaunchPadConfig.SavePath
+        : Path.Combine(!GameManager.IsBatchMode ? 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games") : 
+            StationSaveUtils.ExeDirectory.FullName,
+          LaunchPadConfig.SavePath);
+      return false;
+  }
+    
   }
 }
