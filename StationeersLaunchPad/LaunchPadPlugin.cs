@@ -297,7 +297,7 @@ namespace StationeersLaunchPad
     [HarmonyPatch(typeof(StationSaveUtils), nameof(StationSaveUtils.DefaultPath), MethodType.Getter), HarmonyPrefix]
     static bool StationSaveUtils_DefaultPath(ref string __result)
     {      
-      if (LaunchPadConfig.SavePath == null)
+      if (string.IsNullOrEmpty(LaunchPadConfig.SavePath))
       {
         return true;
       }
