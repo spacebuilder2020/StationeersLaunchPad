@@ -1,6 +1,11 @@
 using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
 using Assets.Scripts.Serialization;
+using Assets.Scripts.Util;
+using BepInEx;
+using BepInEx.Configuration;
+using Cysharp.Threading.Tasks;
+using ImGuiNET;
 using Mono.Cecil;
 using Steamworks;
 using Steamworks.Ugc;
@@ -13,22 +18,23 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Serialization;
-using Assets.Scripts.Util;
-using BepInEx;
-using BepInEx.Configuration;
-using Cysharp.Threading.Tasks;
+using UI.ImGuiUi;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace StationeersLaunchPad
 {
   public enum LoadState
   {
     Initializing,
+    Searching,
     Updating,
     Configuring,
-    ModsLoading,
-    ModsLoaded,
-    GameRunning
+    Loading,
+    Loaded,
+    Running,
+    Updated,
+    Failed,
   }
 
   public static class LaunchPadConfig
@@ -45,6 +51,9 @@ namespace StationeersLaunchPad
     public static ConfigEntry<string> SavePathOverride;
     public static ConfigEntry<bool> PostUpdateCleanup;
     public static ConfigEntry<bool> OneTimeBoosterInstall;
+    public static ConfigEntry<bool> AutoScrollLogs;
+    public static ConfigEntry<LogSeverity> LogSeverities;
+
     public static SortedConfigFile SortedConfig;
 
     public static SplashBehaviour SplashBehaviour;
@@ -62,6 +71,8 @@ namespace StationeersLaunchPad
     public static bool AutoLoad = true;
     public static bool HasUpdated = false;
     public static bool SteamDisabled = false;
+    public static bool AutoScroll = false;
+    public static LogSeverity Severities;
     public static string SavePath;
     public static Stopwatch AutoStopwatch = new();
     public static Stopwatch ElapsedStopwatch = new();
@@ -76,6 +87,8 @@ namespace StationeersLaunchPad
       LoadStrategyType = StrategyType.Value;
       LoadStrategyMode = StrategyMode.Value;
       SavePath = SavePathOverride.Value;
+      AutoScroll = AutoScrollLogs.Value;
+      Severities = LogSeverities.Value;
 
       // we need to wait a frame so all the RuntimeInitializeOnLoad tasks are complete, otherwise GameManager.IsBatchMode won't be set yet
       await UniTask.Yield();
@@ -95,12 +108,15 @@ namespace StationeersLaunchPad
         await LaunchPadAlertGUI.Show("Restart Recommended", "StationeersLaunchPad has been updated, it is recommended to restart the game.",
           LaunchPadAlertGUI.DefaultSize,
           LaunchPadAlertGUI.DefaultPosition,
-          ("Continue Loading", () => {
+          ("Continue Loading", () =>
+          {
             AutoLoad = true;
 
             return true;
-          }),
-          ("Restart Game", () => {
+          }
+        ),
+          ("Restart Game", () =>
+          {
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = Paths.ExecutablePath;
             startInfo.WorkingDirectory = Paths.GameRootPath;
@@ -114,25 +130,24 @@ namespace StationeersLaunchPad
             Application.Quit();
 
             return false;
-          }),
+          }
+        ),
           ("Close", () => true)
         );
       }
 
       AutoStopwatch.Restart();
-
       while (LoadState == LoadState.Configuring && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoLoadWaitTime.Value))
         await UniTask.Yield();
 
       if (LoadState == LoadState.Configuring)
-        LoadState = LoadState.ModsLoading;
+        LoadState = LoadState.Loading;
 
-      if (LoadState == LoadState.ModsLoading)
+      if (LoadState == LoadState.Loading)
         await LoadMods();
 
       AutoStopwatch.Restart();
-
-      while (LoadState == LoadState.ModsLoaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoLoadWaitTime.Value))
+      while (LoadState == LoadState.Loaded && (!AutoLoad || AutoStopwatch.Elapsed.TotalSeconds < AutoLoadWaitTime.Value))
         await UniTask.Yield();
 
       StartGame();
@@ -146,6 +161,8 @@ namespace StationeersLaunchPad
 
         Logger.Global.LogInfo("Initializing...");
         await UniTask.Run(() => Initialize());
+
+        LoadState = LoadState.Searching;
 
         Logger.Global.LogInfo("Listing Local Mods");
         await UniTask.Run(() => LoadLocalItems());
@@ -178,6 +195,7 @@ namespace StationeersLaunchPad
         if (CheckUpdate)
         {
           LoadState = LoadState.Updating;
+
           Logger.Global.LogInfo("Checking Version");
           await LaunchPadUpdater.CheckVersion();
         }
@@ -192,7 +210,7 @@ namespace StationeersLaunchPad
           Logger.Global.LogException(ex);
 
           Mods = new();
-          LoadState = LoadState.ModsLoaded;
+          LoadState = LoadState.Failed;
           AutoLoad = false;
         }
         else
@@ -614,7 +632,7 @@ namespace StationeersLaunchPad
     private async static UniTask LoadMods()
     {
       ElapsedStopwatch.Restart();
-      LoadState = LoadState.ModsLoading;
+      LoadState = LoadState.Loading;
 
       LoadStrategy loadStrategy = (LoadStrategyType, LoadStrategyMode) switch
       {
@@ -627,15 +645,19 @@ namespace StationeersLaunchPad
       ElapsedStopwatch.Stop();
       Logger.Global.LogWarning($"Took {ElapsedStopwatch.Elapsed.ToString(@"m\:ss\.fff")} to load mods.");
 
-      LoadState = LoadState.ModsLoaded;
+      LoadState = LoadState.Loaded;
     }
 
     private static void StartGame()
     {
-      LoadState = LoadState.GameRunning;
+      LoadState = LoadState.Running;
       var co = (IEnumerator) typeof(SplashBehaviour).GetMethod("AwakeCoroutine", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(SplashBehaviour, new object[] { });
       SplashBehaviour.StartCoroutine(co);
-      LaunchPadGUI.IsActive = false;
+
+      LaunchPadLoaderGUI.IsActive =
+      LaunchPadConsoleGUI.IsActive =
+      LaunchPadAlertGUI.IsActive =
+      LaunchPadConfigGUI.IsActive = false;
     }
 
     public static void ExportModPackage()
