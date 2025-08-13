@@ -1,5 +1,6 @@
 using Assets.Scripts;
 using Assets.Scripts.Networking.Transports;
+using Assets.Scripts.Objects;
 using Assets.Scripts.Serialization;
 using Assets.Scripts.UI;
 using BepInEx;
@@ -266,6 +267,14 @@ namespace StationeersLaunchPad
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games") :
             StationSaveUtils.ExeDirectory.FullName,
           LaunchPadConfig.SavePath);
+      return false;
+    }
+
+    [HarmonyPatch(typeof(Item), "UpdateDecayTimes"), HarmonyPrefix]
+    static bool Item_UpdateDecayTimes(ref Item __instance) {
+      Traverse.Create(__instance).Method("set_TimeToDecayFromNowInSeconds", 
+          (int) ((__instance.DamageState.MaxDamage - (double) __instance.DamageState.Decay) / ( __instance.CurrentDecayRate * 60.0)))
+        .GetValue();
       return false;
     }
   }
